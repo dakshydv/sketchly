@@ -13,6 +13,8 @@ export interface request extends Request {
   userId?: number;
 }
 
+export type FontSizeType = "S" | "M" | "L" | "XL"
+
 export type shapesMessage =
   | {
       type: "rect";
@@ -20,26 +22,30 @@ export type shapesMessage =
       y: number;
       width: number;
       height: number;
+      strokeColor: string;
       strokeStyle: string;
       strokeWidth: number;
+      cornerRadius: number;
     }
   | {
-      type: "circle";
+      type: "ellipse";
       centerX: number;
       centerY: number;
-      radiusx: number;
+      radiusX: number;
       radiusY: number;
-      strokeStyle: string;
+      strokeColor: string;
       strokeWidth: number;
+      strokeStyle: string;
     }
   | {
       type: "line";
-      startX: number;
-      startY: number;
-      endX: number;
-      endY: number;
-      strokeStyle: string;
+      fromX: number;
+      fromY: number;
+      toX: number;
+      toY: number;
+      strokeColor: string;
       strokeWidth: number;
+      strokeStyle: string;
     }
   | {
       type: "text";
@@ -48,8 +54,9 @@ export type shapesMessage =
       x: number;
       y: number;
       width: number;
-      strokeStyle: string;
+      strokeColor: string;
       strokeWidth: number;
+      fontSize: number
     }
   | {
       type: "diamond";
@@ -59,31 +66,34 @@ export type shapesMessage =
       xVertical: number;
       yTop: number;
       yBottom: number;
-      strokeStyle: string;
+      strokeColor: string;
       strokeWidth: number;
+      strokeStyle: string
     }
   | {
       type: "pencil";
       style: string;
       cords: Cords[];
-      strokeStyle: string;
+      strokeColor: string;
       strokeWidth: number;
+      strokeStyle: string
     }
   | {
       type: "arrow";
-      fromX: number;
-      toX: number;
-      fromY: number;
-      toY: number;
-      strokeStyle: string;
+      startX: number;
+      endX: number;
+      startY: number;
+      endY: number;
+      strokeColor: string;
       strokeWidth: number;
+      strokeStyle: string
     };
 
 export type Shapes =
   | "select"
   | "rect"
   | "diamond"
-  | "circle"
+  | "ellipse"
   | "line"
   | "pointer"
   | "text"

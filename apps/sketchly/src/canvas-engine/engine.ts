@@ -1,6 +1,6 @@
 import axios from "axios";
-import { Cords, Shapes, shapesMessage } from "@/config/type";
-import { getExistingShapes } from "./utils";
+import { Cords, FontSizeType, Shapes, shapesMessage } from "@/config/type";
+import { getDashDense, getDashRough, getExistingShapes } from "./utils";
 import getStroke from "perfect-freehand";
 import { getSvgPathFromStroke } from "./utils";
 import { CaveatFont } from "@/config/style";
@@ -14,13 +14,16 @@ export class Engine {
   private startY = 0;
   private selectedStrokeWidth: number = 1;
   private selectedStrokeColor: string;
+  private selectedStrokeStyle: string = "simple";
   private selectedBgColor: string;
+  private selectedRectBorder: number = 30;
   private selectedTool: Shapes | null = "pointer";
+  private selectedFontSize: number = 18;
   private canvasTheme: string = "dark";
   private freeDrawCords: Cords[] = [];
   private input!: HTMLTextAreaElement;
   private mouseDownHandler!: (e: MouseEvent) => void;
-  private mouseUpHanlder!: (e: MouseEvent) => void;
+  private mouseUpHandler!: (e: MouseEvent) => void;
   private mouseMoveHandler!: (e: MouseEvent) => void;
   private mouseClickHandler!: (e: MouseEvent) => void;
   existingShapes: shapesMessage[];
@@ -48,7 +51,7 @@ export class Engine {
     this.selectedBgColor = bgColor;
     this.selectedStrokeWidth = strokeWidth;
     this.selectedStrokeColor = strokeColor;
-    this.initMouseHanlders();
+    this.initMouseHandlers();
     this.clearCanvas();
   }
 
@@ -56,17 +59,50 @@ export class Engine {
     this.selectedTool = tool;
   }
 
+  public setStrokeStyle(style: string) {
+    this.selectedStrokeStyle = style;
+  }
+
+  public setRectRadius(radius: number) {
+    this.selectedRectBorder = radius;
+  }
+
+  public setFontSize(fontSize: FontSizeType) {
+    switch (fontSize) {
+      case "S":
+        this.selectedFontSize = 18
+        break;
+      case "M":
+        this.selectedFontSize = 24
+        break;
+      case "L":
+        this.selectedFontSize = 30
+        break;
+      case "XL":
+        this.selectedFontSize = 36
+        break;
+      default:
+        break;
+    }
+  }
+
   async init() {
     this.existingShapes = await getExistingShapes(this.roomId);
     this.clearCanvas();
   }
 
-  informWsServer(shape: shapesMessage) {
+  broadcastShape(shape: shapesMessage) {
     this.existingShapes.push(shape);
     this.saveShapesToLocalStorage();
-    // will add ws logic later
     this.clearCanvas();
   }
+
+  // informWsServer(shape: shapesMessage) {
+  //   this.existingShapes.push(shape);
+  //   this.saveShapesToLocalStorage();
+  //   // will add ws logic later
+  //   this.clearCanvas();
+  // }
 
   private saveShapesToLocalStorage() {
     try {
@@ -94,66 +130,7 @@ export class Engine {
     this.ctx.fillStyle = this.selectedBgColor;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (this.selectedTool === "pointer" && this.existingShapes.length <= 0) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(80, 150);
-      this.ctx.quadraticCurveTo(50, 150, 50, 95);
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeStyle = "#7c7c7c";
-      this.ctx.stroke();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(43, 91);
-      this.ctx.lineTo(50, 78);
-      this.ctx.lineTo(63, 90);
-      this.ctx.closePath();
-      this.ctx.fillStyle = "#7c7c7c";
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.font = "24px 'Caveat', cursive";
-      this.ctx.fillStyle = "#7c7c7c";
-      this.ctx.fillText("Export, preferences, languages, ...", 85, 152);
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(window.innerWidth / 2 + 75, 170);
-      this.ctx.quadraticCurveTo(
-        window.innerWidth / 2 + 125,
-        150,
-        window.innerWidth / 2 + 85,
-        95
-      );
-      this.ctx.strokeStyle = "#7c7c7c";
-      this.ctx.stroke();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(window.innerWidth / 2 + 75, 95);
-      this.ctx.lineTo(window.innerWidth / 2 + 75, 80);
-      this.ctx.lineTo(window.innerWidth / 2 + 95, 90);
-      this.ctx.closePath();
-      this.ctx.fillStyle = "#7c7c7c";
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.font = "24px 'Caveat', cursive";
-      this.ctx.fillStyle = "#7c7c7c";
-      this.ctx.fillText("Pick a tool &", window.innerWidth / 2 - 50, 165);
-      this.ctx.fillText("Start drawing!", window.innerWidth / 2 - 55, 190);
-
-      this.ctx.font = "900 55px 'Caveat', cursive";
-      this.ctx.fillStyle = this.canvasTheme === "dark" ? "#190064" : "#e1dfff";
-      this.ctx.fillText(
-        "SKETCHLY",
-        window.innerWidth / 2 - 120,
-        window.innerHeight / 2
-      );
-
-      this.ctx.font = "24px 'Caveat', cursive";
-      this.ctx.fillStyle = "#7c7c7c";
-      this.ctx.fillText(
-        "All your data is saved locally in your browser",
-        window.innerWidth / 2 - 180,
-        window.innerHeight / 2 + 50
-      );
+      this.drawWelcomeCanvas();
     }
     if (this.existingShapes === undefined) {
       this.existingShapes = [];
@@ -163,102 +140,94 @@ export class Engine {
       switch (shape.type) {
         case "rect":
           {
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = shape.strokeStyle;
-            this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.roundRect(shape.x, shape.y, shape.width, shape.height, [
-              40,
-            ]);
-            this.ctx.closePath();
-            this.ctx.stroke();
+            this.drawRect(
+              shape.x,
+              shape.y,
+              shape.width,
+              shape.height,
+              shape.strokeColor,
+              shape.strokeStyle,
+              shape.strokeWidth,
+              shape.cornerRadius
+            );
           }
           break;
 
-        case "circle":
+        case "ellipse":
           {
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = shape.strokeStyle;
-            this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.ellipse(
+            this.drawEllipse(
               shape.centerX,
               shape.centerY,
-              shape.radiusx,
+              shape.radiusX,
               shape.radiusY,
-              0,
-              0,
-              Math.PI * 2
+              shape.strokeColor,
+              shape.strokeWidth,
+              shape.strokeStyle
             );
-            this.ctx.stroke();
           }
           break;
 
         case "line":
           {
-            this.ctx.strokeStyle = shape.strokeStyle;
-            this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.moveTo(shape.startX, shape.startY);
-            this.ctx.lineTo(shape.endX, shape.endY);
-            this.ctx.stroke();
+            this.drawLine(
+              shape.fromX,
+              shape.fromY,
+              shape.toX,
+              shape.toY,
+              shape.strokeColor,
+              shape.strokeWidth,
+              shape.strokeStyle
+            );
           }
           break;
 
         case "text":
           {
-            this.ctx.strokeStyle = shape.strokeStyle;
+            this.ctx.strokeStyle = shape.strokeColor;
             this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.font = "24px 'Caveat', cursive";
-            this.ctx.fillStyle = shape.strokeStyle;
-            this.ctx.fillText(shape.text, shape.x, shape.y + 24);
+            this.ctx.font = `${shape.fontSize}px 'Caveat', cursive`
+            this.ctx.fillStyle = shape.strokeColor;
+            this.ctx.fillText(shape.text, shape.x, shape.y + shape.fontSize);
           }
           break;
 
         case "diamond":
           {
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = shape.strokeStyle;
-            this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.moveTo(shape.xLeft, shape.yHorizontal);
-            this.ctx.lineTo(shape.xVertical, shape.yTop);
-            this.ctx.lineTo(shape.xRight, shape.yHorizontal);
-            this.ctx.lineTo(shape.xVertical, shape.yBottom);
-            this.ctx.lineTo(shape.xLeft, shape.yHorizontal);
-            this.ctx.stroke();
+            this.drawDiamond(
+              shape.xLeft,
+              shape.xRight,
+              shape.yHorizontal,
+              shape.xVertical,
+              shape.yTop,
+              shape.yBottom,
+              shape.strokeColor,
+              shape.strokeWidth,
+              shape.strokeStyle
+            );
           }
           break;
 
         case "pencil":
           {
-            const path = new Path2D(
-              this.generatePencilPath(shape.cords, shape.strokeWidth)
+            this.initPencilDraw(
+              shape.cords,
+              shape.strokeWidth,
+              shape.strokeColor,
+              shape.strokeStyle
             );
-            this.ctx.save();
-            this.ctx.fillStyle = shape.strokeStyle;
-            this.ctx.fill(path);
-            this.ctx.restore();
           }
           break;
         case "arrow":
           {
-            const headLength = 20;
-            const dx = shape.toX - shape.fromX;
-            const dy = shape.toY - shape.fromY;
-            const angle = Math.atan2(dy, dx);
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = shape.strokeStyle;
-            this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.moveTo(shape.fromX, shape.fromY);
-            this.ctx.lineTo(shape.toX, shape.toY);
-            this.ctx.lineTo(
-              shape.toX - headLength * Math.cos(angle - Math.PI / 6),
-              shape.toY - headLength * Math.sin(angle - Math.PI / 6)
+            this.drawArrow(
+              shape.startX,
+              shape.startY,
+              shape.endX,
+              shape.endY,
+              shape.strokeColor,
+              shape.strokeWidth,
+              shape.strokeStyle
             );
-            this.ctx.moveTo(shape.toX, shape.toY);
-            this.ctx.lineTo(
-              shape.toX - headLength * Math.cos(angle + Math.PI / 6),
-              shape.toY - headLength * Math.sin(angle + Math.PI / 6)
-            );
-            this.ctx.stroke();
-            this.ctx.closePath();
           }
           break;
 
@@ -268,14 +237,14 @@ export class Engine {
     });
   }
 
-  initTextDraw(x: number, y: number) {
+  drawText(x: number, y: number, strokeColor: string, fontSize: number) {
     this.input = document.createElement("textarea");
-    this.input.style.color = "#FFFFFF";
+    this.input.style.color = strokeColor;
     this.input.autofocus = true;
     this.input.style.left = `${x}px`;
     this.input.style.top = `${y}px`;
     this.input.className = `${CaveatFont.className} `;
-    this.input.style.fontSize = "24px";
+    this.input.style.fontSize = `${fontSize}px`;
     this.input.style.backgroundColor = this.selectedBgColor;
     Object.assign(this.input.style, {
       position: "absolute",
@@ -344,19 +313,26 @@ export class Engine {
         x,
         y,
         width: this.input.offsetWidth,
-        strokeStyle: this.selectedStrokeColor,
+        strokeColor: this.selectedStrokeColor,
         strokeWidth: this.selectedStrokeWidth,
+        fontSize: this.selectedFontSize,
       };
-      this.informWsServer(shape);
+      this.broadcastShape(shape);
       document.body.removeChild(this.input);
     });
     this.selectedTool = null;
   }
 
-  initPencilDraw(cords: Cords[], strokeWidth: number) {
+  initPencilDraw(
+    cords: Cords[],
+    strokeWidth: number,
+    strokeColor: string,
+    strokeStyle: string
+  ) {
     const path = new Path2D(this.generatePencilPath(cords, strokeWidth));
     this.ctx.save();
-    this.ctx.fillStyle = this.selectedStrokeColor;
+    this.ctx.fillStyle = strokeColor;
+    this.ctx.strokeStyle = strokeColor;
     this.ctx.fill(path);
     this.ctx.restore();
   }
@@ -404,13 +380,13 @@ export class Engine {
           }
         }
         break;
-      case "circle":
+      case "ellipse":
         {
           const dx = x - shape.centerX;
           const dy = y - shape.centerY;
           const normalized =
             (dx * dx) /
-              ((shape.radiusx + tolerance) * (shape.radiusx + tolerance)) +
+              ((shape.radiusX + tolerance) * (shape.radiusX + tolerance)) +
             (dy * dy) /
               ((shape.radiusY + tolerance) * (shape.radiusY + tolerance));
           return normalized <= 1;
@@ -485,6 +461,44 @@ export class Engine {
       case "line":
         {
           if (
+            (x >= shape.fromX &&
+              x <= shape.toX &&
+              y <= shape.fromY &&
+              y >= shape.toY) ||
+            (x >= shape.fromX &&
+              x <= shape.toX &&
+              y >= shape.fromY &&
+              y <= shape.toY) ||
+            (x <= shape.fromX &&
+              x >= shape.toX &&
+              y <= shape.fromY &&
+              y >= shape.toY) ||
+            (x <= shape.fromX &&
+              x >= shape.toX &&
+              y >= shape.fromY &&
+              y <= shape.toY)
+          ) {
+            return true;
+          }
+        }
+        break;
+      case "arrow":
+        {
+          const headLength = 20;
+          const dx = shape.endX - shape.startX;
+          const dy = shape.startY - shape.startY;
+          const angle = Math.atan2(dy, dx);
+          const arrowLeftX =
+            shape.endX - headLength * Math.cos(angle - Math.PI / 6);
+          const arrowLeftY =
+            shape.endX - headLength * Math.sin(angle - Math.PI / 6);
+          const arrowRightX =
+            shape.endX - headLength * Math.cos(angle + Math.PI / 6);
+          const arrowRightY =
+            shape.endX - headLength * Math.sin(angle + Math.PI / 6);
+
+          if (
+            // main line
             (x >= shape.startX &&
               x <= shape.endX &&
               y <= shape.startY &&
@@ -500,79 +514,41 @@ export class Engine {
             (x <= shape.startX &&
               x >= shape.endX &&
               y >= shape.startY &&
-              y <= shape.endY)
-          ) {
-            return true;
-          }
-        }
-        break;
-      case "arrow":
-        {
-          const headLength = 20;
-          const dx = shape.toX - shape.fromX;
-          const dy = shape.toY - shape.fromY;
-          const angle = Math.atan2(dy, dx);
-          const arrowLeftX =
-            shape.toX - headLength * Math.cos(angle - Math.PI / 6);
-          const arrowLeftY =
-            shape.toX - headLength * Math.sin(angle - Math.PI / 6);
-          const arrowRightX =
-            shape.toX - headLength * Math.cos(angle + Math.PI / 6);
-          const arrowRightY =
-            shape.toX - headLength * Math.sin(angle + Math.PI / 6);
-
-          if (
-            // main line
-            (x >= shape.fromX &&
-              x <= shape.toX &&
-              y <= shape.fromY &&
-              y >= shape.toY) ||
-            (x >= shape.fromX &&
-              x <= shape.toX &&
-              y >= shape.fromY &&
-              y <= shape.toY) ||
-            (x <= shape.fromX &&
-              x >= shape.toX &&
-              y <= shape.fromY &&
-              y >= shape.toY) ||
-            (x <= shape.fromX &&
-              x >= shape.toX &&
-              y >= shape.fromY &&
-              y <= shape.toY) ||
+              y <= shape.endY) ||
             // left side arrow
             (x >= arrowLeftX &&
-              x <= shape.toX &&
+              x <= shape.endX &&
               y <= arrowLeftY &&
-              y >= shape.toY) ||
+              y >= shape.endY) ||
             (x >= arrowLeftX &&
-              x <= shape.toX &&
+              x <= shape.endX &&
               y >= arrowLeftY &&
-              y <= shape.toY) ||
+              y <= shape.endY) ||
             (x <= arrowLeftX &&
-              x >= shape.toX &&
+              x >= shape.endX &&
               y <= arrowLeftY &&
-              y >= shape.toY) ||
+              y >= shape.endY) ||
             (x <= arrowLeftX &&
-              x >= shape.toX &&
+              x >= shape.endX &&
               y >= arrowLeftY &&
-              y <= shape.toY) ||
+              y <= shape.endY) ||
             // right side arrow
             (x >= arrowRightX &&
-              x <= shape.toX &&
+              x <= shape.endX &&
               y <= arrowRightY &&
-              y >= shape.toY) ||
+              y >= shape.endY) ||
             (x >= arrowRightX &&
-              x <= shape.toX &&
+              x <= shape.endX &&
               y >= arrowRightY &&
-              y <= shape.toY) ||
+              y <= shape.endY) ||
             (x <= arrowRightX &&
-              x >= shape.toX &&
+              x >= shape.endX &&
               y <= arrowRightY &&
-              y >= shape.toY) ||
+              y >= shape.endY) ||
             (x <= arrowRightX &&
-              x >= shape.toX &&
+              x >= shape.endX &&
               y >= arrowRightY &&
-              y <= shape.toY)
+              y <= shape.endY)
           ) {
             return true;
           }
@@ -611,6 +587,246 @@ export class Engine {
     this.existingShapes = [];
   }
 
+  drawWelcomeCanvas() {
+    this.ctx.beginPath();
+    this.ctx.moveTo(80, 150);
+    this.ctx.quadraticCurveTo(50, 150, 50, 95);
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeStyle = "#7c7c7c";
+    this.ctx.stroke();
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(43, 91);
+    this.ctx.lineTo(50, 78);
+    this.ctx.lineTo(63, 90);
+    this.ctx.closePath();
+    this.ctx.fillStyle = "#7c7c7c";
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    this.ctx.font = "24px 'Caveat', cursive";
+    this.ctx.fillStyle = "#7c7c7c";
+    this.ctx.fillText("Export, preferences, languages, ...", 85, 152);
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(window.innerWidth / 2 + 75, 170);
+    this.ctx.quadraticCurveTo(
+      window.innerWidth / 2 + 125,
+      150,
+      window.innerWidth / 2 + 85,
+      95
+    );
+    this.ctx.strokeStyle = "#7c7c7c";
+    this.ctx.stroke();
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(window.innerWidth / 2 + 75, 95);
+    this.ctx.lineTo(window.innerWidth / 2 + 75, 80);
+    this.ctx.lineTo(window.innerWidth / 2 + 95, 90);
+    this.ctx.closePath();
+    this.ctx.fillStyle = "#7c7c7c";
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    this.ctx.font = "24px 'Caveat', cursive";
+    this.ctx.fillStyle = "#7c7c7c";
+    this.ctx.fillText("Pick a tool &", window.innerWidth / 2 - 50, 165);
+    this.ctx.fillText("Start drawing!", window.innerWidth / 2 - 55, 190);
+
+    this.ctx.font = "900 55px 'Caveat', cursive";
+    this.ctx.fillStyle = this.canvasTheme === "dark" ? "#190064" : "#e1dfff";
+    this.ctx.fillText(
+      "SKETCHLY",
+      window.innerWidth / 2 - 120,
+      window.innerHeight / 2
+    );
+
+    this.ctx.font = "24px 'Caveat', cursive";
+    this.ctx.fillStyle = "#7c7c7c";
+    this.ctx.fillText(
+      "All your data is saved locally in your browser",
+      window.innerWidth / 2 - 180,
+      window.innerHeight / 2 + 50
+    );
+  }
+
+  drawRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    strokeColor: string,
+    strokeStyle: string,
+    strokeWidth: number,
+    cornerRadius: number
+  ) {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = strokeColor;
+    this.ctx.lineWidth = strokeWidth;
+    switch (strokeStyle) {
+      case "simple":
+        this.ctx.setLineDash([0]);
+        break;
+      case "rough":
+        this.ctx.setLineDash([8, 6]);
+        break;
+      case "dense":
+        this.ctx.setLineDash([4, 6]);
+        break;
+      default:
+        this.ctx.setLineDash([]);
+        break;
+    }
+    this.ctx.roundRect(x, y, width, height, [cornerRadius]);
+    this.ctx.closePath();
+    this.ctx.stroke();
+  }
+
+  drawEllipse(
+    centerX: number,
+    centerY: number,
+    radiusX: number,
+    radiusY: number,
+    strokeColor: string,
+    strokeWidth: number,
+    strokeStyle: string
+  ) {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = strokeColor;
+    this.ctx.lineWidth = strokeWidth;
+    switch (strokeStyle) {
+      case "simple":
+        this.ctx.setLineDash([0]);
+        break;
+      case "rough":
+        this.ctx.setLineDash([8, 6]);
+        break;
+      case "dense":
+        this.ctx.setLineDash([4, 6]);
+        break;
+      default:
+        this.ctx.setLineDash([]);
+        break;
+    }
+    this.ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+    this.ctx.stroke();
+    this.ctx.closePath();
+  }
+
+  drawLine(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    strokeColor: string,
+    strokeWidth: number,
+    strokeStyle: string
+  ) {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = strokeColor;
+    this.ctx.lineWidth = strokeWidth;
+    switch (strokeStyle) {
+      case "simple":
+        this.ctx.setLineDash([0]);
+        break;
+      case "rough":
+        this.ctx.setLineDash([8, 6]);
+        break;
+      case "dense":
+        this.ctx.setLineDash([4, 6]);
+        break;
+      default:
+        this.ctx.setLineDash([]);
+        break;
+    }
+    this.ctx.moveTo(fromX, fromY);
+    this.ctx.lineTo(toX, toY);
+    this.ctx.stroke();
+    this.ctx.closePath();
+  }
+
+  drawDiamond(
+    xLeft: number,
+    xRight: number,
+    yHorizontal: number,
+    xVertical: number,
+    yTop: number,
+    yBottom: number,
+    strokeColor: string,
+    strokeWidth: number,
+    strokeStyle: string
+  ) {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = strokeColor;
+    this.ctx.lineWidth = strokeWidth;
+    switch (strokeStyle) {
+      case "simple":
+        this.ctx.setLineDash([0]);
+        break;
+      case "rough":
+        this.ctx.setLineDash([8, 6]);
+        break;
+      case "dense":
+        this.ctx.setLineDash([4, 6]);
+        break;
+      default:
+        this.ctx.setLineDash([]);
+        break;
+    }
+    this.ctx.moveTo(xLeft, yHorizontal);
+    this.ctx.lineTo(xVertical, yTop);
+    this.ctx.lineTo(xRight, yHorizontal);
+    this.ctx.lineTo(xVertical, yBottom);
+    this.ctx.lineTo(xLeft, yHorizontal);
+    this.ctx.stroke();
+    this.ctx.closePath();
+  }
+
+  drawArrow(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    strokeColor: string,
+    strokeWidth: number,
+    strokeStyle: string
+  ) {
+    const headLength = 20;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const angle = Math.atan2(dy, dx);
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = strokeColor;
+    this.ctx.lineWidth = strokeWidth;
+    switch (strokeStyle) {
+      case "simple":
+        this.ctx.setLineDash([0]);
+        break;
+      case "rough":
+        this.ctx.setLineDash([8, 6]);
+        break;
+      case "dense":
+        this.ctx.setLineDash([4, 6]);
+        break;
+      default:
+        this.ctx.setLineDash([]);
+        break;
+    }
+    this.ctx.moveTo(startX, startY);
+    this.ctx.lineTo(endX, endY);
+    this.ctx.lineTo(
+      endX - headLength * Math.cos(angle - Math.PI / 6),
+      endY - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    this.ctx.moveTo(endX, endY);
+    this.ctx.lineTo(
+      endX - headLength * Math.cos(angle + Math.PI / 6),
+      endY - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    this.ctx.stroke();
+    this.ctx.closePath();
+  }
+
   deleteShape(shape: shapesMessage) {
     this.existingShapes = this.existingShapes.filter(
       (existingShape) => existingShape !== shape
@@ -646,13 +862,13 @@ export class Engine {
     return clientY - rect.top;
   }
 
-  initMouseHanlders() {
+  initMouseHandlers() {
     this.mouseClickHandler = (e) => {
       const x = this.transformX(e.clientX);
       const y = this.transformY(e.clientY);
 
       if (this.selectedTool === "text") {
-        this.initTextDraw(x, y);
+        this.drawText(x, y, this.selectedStrokeColor, this.selectedFontSize);
       }
       if (this.selectedTool === "eraser") {
         this.clearCanvas();
@@ -681,7 +897,7 @@ export class Engine {
       }
     };
 
-    this.mouseUpHanlder = (e) => {
+    this.mouseUpHandler = (e) => {
       if (!this.selectedTool) {
         return;
       }
@@ -707,25 +923,28 @@ export class Engine {
               y: this.startY,
               width,
               height,
-              strokeStyle: this.selectedStrokeColor,
+              strokeColor: this.selectedStrokeColor,
+              strokeStyle: this.selectedStrokeStyle,
               strokeWidth: this.selectedStrokeWidth,
+              cornerRadius: this.selectedRectBorder,
             };
-            this.informWsServer(shape);
+            this.broadcastShape(shape);
           }
           break;
 
-        case "circle":
+        case "ellipse":
           {
             shape = {
-              type: "circle",
+              type: "ellipse",
               centerX: this.startX + width / 2,
               centerY: this.startY + height / 2,
-              radiusx: Math.abs((this.startX - endX) / 2),
+              radiusX: Math.abs((this.startX - endX) / 2),
               radiusY: Math.abs((this.startY - endY) / 2),
               strokeWidth: this.selectedStrokeWidth,
-              strokeStyle: this.selectedStrokeColor,
+              strokeColor: this.selectedStrokeColor,
+              strokeStyle: this.selectedStrokeStyle,
             };
-            this.informWsServer(shape);
+            this.broadcastShape(shape);
           }
           break;
 
@@ -733,14 +952,15 @@ export class Engine {
           {
             shape = {
               type: "line",
-              startX: this.startX,
-              startY: this.startY,
-              endX: endX,
-              endY: endY,
-              strokeStyle: this.selectedStrokeColor,
+              fromX: this.startX,
+              fromY: this.startY,
+              toX: endX,
+              toY: endY,
+              strokeColor: this.selectedStrokeColor,
               strokeWidth: this.selectedStrokeWidth,
+              strokeStyle: this.selectedStrokeStyle,
             };
-            this.informWsServer(shape);
+            this.broadcastShape(shape);
           }
           break;
         case "diamond":
@@ -753,10 +973,11 @@ export class Engine {
               xVertical: (this.startX + endX) / 2,
               yTop: this.startY,
               yBottom: endY,
-              strokeStyle: this.selectedStrokeColor,
+              strokeColor: this.selectedStrokeColor,
               strokeWidth: this.selectedStrokeWidth,
+              strokeStyle: this.selectedStrokeStyle,
             };
-            this.informWsServer(shape);
+            this.broadcastShape(shape);
           }
           break;
         case "pencil":
@@ -765,35 +986,39 @@ export class Engine {
               type: "pencil",
               cords: this.freeDrawCords,
               style: "#FFFFFF",
-              strokeStyle: this.selectedStrokeColor,
+              strokeColor: this.selectedStrokeColor,
               strokeWidth: this.selectedStrokeWidth,
+              strokeStyle: this.selectedStrokeStyle,
             };
-            this.informWsServer(shape);
-            this.initPencilDraw(this.freeDrawCords, 1);
+            this.initPencilDraw(
+              this.freeDrawCords,
+              1,
+              shape.strokeColor,
+              shape.strokeStyle
+            );
             this.freeDrawCords = [];
-            this.existingShapes.push(shape);
-            this.clearCanvas();
+            this.broadcastShape(shape);
           }
           break;
         case "arrow":
           {
             shape = {
               type: "arrow",
-              fromX: this.startX,
-              fromY: this.startY,
-              toX: endX,
-              toY: endY,
-              strokeStyle: this.selectedStrokeColor,
+              startX: this.startX,
+              startY: this.startY,
+              endX: endX,
+              endY: endY,
+              strokeColor: this.selectedStrokeColor,
               strokeWidth: this.selectedStrokeWidth,
+              strokeStyle: this.selectedStrokeStyle,
             };
-            this.existingShapes.push(shape);
-            this.clearCanvas();
+            this.broadcastShape(shape);
           }
           break;
-
         default:
           break;
       }
+      // this.broadcastShape(shape)
     };
 
     this.mouseMoveHandler = (e) => {
@@ -810,60 +1035,61 @@ export class Engine {
 
         switch (this.selectedTool) {
           case "rect":
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = this.selectedStrokeColor;
-            this.ctx.lineWidth = this.selectedStrokeWidth;
-            this.ctx.roundRect(this.startX, this.startY, width, height, [40]);
-            this.ctx.closePath();
-            this.ctx.stroke();
+            this.drawRect(
+              this.startX,
+              this.startY,
+              width,
+              height,
+              this.selectedStrokeColor,
+              this.selectedStrokeStyle,
+              this.selectedStrokeWidth,
+              this.selectedRectBorder
+            );
             break;
-          case "circle":
+          case "ellipse":
             const centerX = this.startX + width / 2;
             const centerY = this.startY + height / 2;
             const radiusX = Math.abs(width / 2);
             const radiusY = Math.abs(height / 2);
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = this.selectedStrokeColor;
-            this.ctx.lineWidth = this.selectedStrokeWidth;
-            this.ctx.ellipse(
+            this.drawEllipse(
               centerX,
               centerY,
               radiusX,
               radiusY,
-              0,
-              0,
-              2 * Math.PI
+              this.selectedStrokeColor,
+              this.selectedStrokeWidth,
+              this.selectedStrokeStyle
             );
-            this.ctx.stroke();
-            this.ctx.closePath();
             break;
           case "line":
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = this.selectedStrokeColor;
-            this.ctx.lineWidth = this.selectedStrokeWidth;
-            this.ctx.moveTo(this.startX, this.startY);
-            this.ctx.lineTo(currentX, currentY);
-            this.ctx.stroke();
-            this.ctx.closePath();
+            this.drawLine(
+              this.startX,
+              this.startY,
+              currentX,
+              currentY,
+              this.selectedStrokeColor,
+              this.selectedStrokeWidth,
+              this.selectedStrokeStyle
+            );
             break;
           case "diamond":
             const xLeft = this.startX;
             const xRight = currentX;
-            const yHorizontal = (this.startY + currentY) / 2;
-            const xVertical = (this.startX + currentX) / 2;
+            const yHorizontal = (this.startY + currentY) / 2; // y cordinate of left and right corner
+            const xVertical = (this.startX + currentX) / 2; // x cordinate of top and bottom corner
             const yTop = this.startY;
             const yBottom = currentY;
-
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = this.selectedStrokeColor;
-            this.ctx.lineWidth = this.selectedStrokeWidth;
-            this.ctx.moveTo(xLeft, yHorizontal);
-            this.ctx.lineTo(xVertical, yTop);
-            this.ctx.lineTo(xRight, yHorizontal);
-            this.ctx.lineTo(xVertical, yBottom);
-            this.ctx.lineTo(xLeft, yHorizontal);
-            this.ctx.stroke();
-            this.ctx.closePath();
+            this.drawDiamond(
+              xLeft,
+              xRight,
+              yHorizontal,
+              xVertical,
+              yTop,
+              yBottom,
+              this.selectedStrokeColor,
+              this.selectedStrokeWidth,
+              this.selectedStrokeStyle
+            );
             break;
           case "pencil":
             this.freeDrawCords.push({
@@ -871,31 +1097,25 @@ export class Engine {
               y: this.transformY(e.clientY),
             });
             this.clearCanvas();
-            this.initPencilDraw(this.freeDrawCords, this.selectedStrokeWidth);
+            this.initPencilDraw(
+              this.freeDrawCords,
+              this.selectedStrokeWidth,
+              this.selectedStrokeColor,
+              this.selectedStrokeStyle
+            );
             break;
           case "arrow":
-            const headLength = 20;
-            const endX = this.transformX(e.clientX);
-            const endY = this.transformY(e.clientY);
-            const dx = endX - this.startX;
-            const dy = endY - this.startY;
-            const angle = Math.atan2(dy, dx);
-            this.ctx.beginPath();
-            this.ctx.strokeStyle = this.selectedStrokeColor;
-            this.ctx.lineWidth = this.selectedStrokeWidth;
-            this.ctx.moveTo(this.startX, this.startY);
-            this.ctx.lineTo(endX, endY);
-            this.ctx.lineTo(
-              endX - headLength * Math.cos(angle - Math.PI / 6),
-              endY - headLength * Math.sin(angle - Math.PI / 6)
+            const endX = this.transformX(currentX);
+            const endY = this.transformY(currentY);
+            this.drawArrow(
+              this.startX,
+              this.startY,
+              endX,
+              endY,
+              this.selectedStrokeColor,
+              this.selectedStrokeWidth,
+              this.selectedStrokeStyle
             );
-            this.ctx.moveTo(endX, endY);
-            this.ctx.lineTo(
-              endX - headLength * Math.cos(angle + Math.PI / 6),
-              endY - headLength * Math.sin(angle + Math.PI / 6)
-            );
-            this.ctx.stroke();
-            this.ctx.closePath();
             break;
           case "pointer":
             const offSetX = currentX - this.startX;
@@ -907,15 +1127,15 @@ export class Engine {
                   shape.x += offSetX;
                   shape.y += offSetY;
                   break;
-                case "circle":
+                case "ellipse":
                   shape.centerX += offSetX;
                   shape.centerY += offSetY;
                   break;
                 case "line":
-                  shape.startX += offSetX;
-                  shape.startY += offSetY;
-                  shape.endX += offSetX;
-                  shape.endY += offSetY;
+                  shape.fromX += offSetX;
+                  shape.fromY += offSetY;
+                  shape.toX += offSetX;
+                  shape.toY += offSetY;
                   break;
                 case "text":
                   shape.x += offSetX;
@@ -936,10 +1156,10 @@ export class Engine {
                   });
                   break;
                 case "arrow":
-                  shape.fromX += offSetX;
-                  shape.toX += offSetX;
-                  shape.fromY += offSetY;
-                  shape.toY += offSetY;
+                  shape.startX += offSetX;
+                  shape.endX += offSetX;
+                  shape.startY += offSetY;
+                  shape.endY += offSetY;
                   break;
 
                 default:
@@ -959,14 +1179,14 @@ export class Engine {
 
     this.canvas.addEventListener("click", this.mouseClickHandler);
     this.canvas.addEventListener("mousedown", this.mouseDownHandler);
-    this.canvas.addEventListener("mouseup", this.mouseUpHanlder);
+    this.canvas.addEventListener("mouseup", this.mouseUpHandler);
     this.canvas.addEventListener("mousemove", this.mouseMoveHandler);
   }
 
   cleanup() {
     this.canvas.removeEventListener("click", this.mouseClickHandler);
     this.canvas.removeEventListener("mousedown", this.mouseDownHandler);
-    this.canvas.removeEventListener("mouseup", this.mouseUpHanlder);
+    this.canvas.removeEventListener("mouseup", this.mouseUpHandler);
     this.canvas.removeEventListener("mousemove", this.mouseMoveHandler);
   }
 }

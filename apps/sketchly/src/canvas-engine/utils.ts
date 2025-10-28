@@ -62,3 +62,6 @@ export function getSvgPathFromStroke(points: number[][]): string {
     .join(" ")
     .replace(TO_FIXED_PRECISION, "$1"); // Limit precision for performance
 }
+
+export const getDashRough = (stroke: number) => [stroke, stroke * 6];
+export const getDashDense = (stroke: number) => [stroke, stroke * 3];
