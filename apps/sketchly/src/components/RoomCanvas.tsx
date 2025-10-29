@@ -421,7 +421,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
 
       <div className="fixed sm:hidden top-4 left-1/2 -translate-x-1/2 z-10 w-full px-3">
         <div
-          className={`${isThemeDark ? "bg-[#23232a] text-white" : "bg-[#ffffff] text-black outline outline-gray-200"} backdrop-blur-sm rounded-lg h-11 px-3 flex gap-2 overflow-x-auto no-scrollbar`}
+          className={`${isThemeDark ? "bg-[#23232a] text-white" : "bg-[#ffffff] text-black outline outline-gray-200"} backdrop-blur-sm rounded-lg h-11 px-3 flex gap-1 overflow-x-auto no-scrollbar`}
         >
           <IconButton
             onClick={() => setTool("select")}
@@ -431,7 +431,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={1}
           />
           <IconButton
             onClick={() => setTool("pointer")}
@@ -441,7 +440,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={2}
           />
           <IconButton
             onClick={() => setTool("rect")}
@@ -451,7 +449,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={3}
           />
           <IconButton
             onClick={() => setTool("diamond")}
@@ -461,7 +458,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={4}
           />
           <IconButton
             onClick={() => setTool("ellipse")}
@@ -471,7 +467,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={5}
           />
           <IconButton
             onClick={() => setTool("line")}
@@ -481,7 +476,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={6}
           />
           <IconButton
             onClick={() => setTool("pencil")}
@@ -491,7 +485,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={7}
           />
           <IconButton
             onClick={() => setTool("arrow")}
@@ -501,7 +494,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={8}
           />
           <IconButton
             onClick={() => setTool("text")}
@@ -511,7 +503,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={9}
           />
           <IconButton
             onClick={() => setTool("eraser")}
@@ -521,7 +512,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={10}
           />
         </div>
       </div>
