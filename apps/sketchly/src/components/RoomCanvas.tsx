@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { Engine } from "@/canvas-engine/engine";
 import { IconButton } from "./IconButton";
 import {
-  IconBorderCornerSquare,
   IconBrandGithub,
   IconBrandLinkedinFilled,
   IconBrandX,
@@ -22,13 +21,19 @@ import {
   MousePointer,
   MoveRight,
   Pencil,
+  Plus,
   Pointer,
   RectangleHorizontal,
   Share2,
   Trash,
   Upload,
 } from "lucide-react";
-import { FontSizeType, Shapes, shapesMessage } from "@/config/type";
+import {
+  FontSizeType,
+  Shapes,
+  shapesMessage,
+  strokeStyleType,
+} from "@/config/type";
 import { ColorPicker } from "./ColorPicker";
 import { StrokeIcon } from "./StrokeIcon";
 import { TextIcon } from "./TextIcon";
@@ -45,7 +50,8 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
   const [isClient, setIsClient] = useState(false);
   const [selectedStrokeWidth, setStrokeWidth] = useState<number>(1);
   const [selectedStrokeColor, setStrokeColor] = useState<string>("#d3d3d3");
-  const [selectedStrokeStyle, setStrokeStyle] = useState<string>("simple");
+  const [selectedStrokeStyle, setStrokeStyle] =
+    useState<strokeStyleType>("simple");
   const [selectedBgColor, setBgColor] = useState<string>("#121212");
   const [selectedRectRadius, setRectRadius] = useState<number>(30);
   const [selectedFontSize, setFontSize] = useState<FontSizeType>("M");
@@ -57,6 +63,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
   const [showShareComingSoon, setShowShareComingSoon] =
     useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   useEffect(() => {
     setIsClient(true);
@@ -120,14 +127,12 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
 
   useEffect(() => {
     if (canvasRef.current) {
-      // Safely handle localStorage access
       let existingShapes: shapesMessage[] = [];
 
       try {
         const shapesData = localStorage.getItem(`shapes_room_${roomId}`);
         if (shapesData) {
           existingShapes = JSON.parse(shapesData);
-          console.log("Loaded shapes from localStorage:", existingShapes);
         } else {
           console.log(
             "No existing shapes found in localStorage for room:",
@@ -195,6 +200,35 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
     setShowClearConfirm(true);
   }
 
+  function handleZoomIn() {
+    const scale = Math.min(zoomLevel * 1.2, 5);
+    setZoomLevel(scale);
+    if (engine) {
+      const centerClientX = window.innerWidth / 2;
+      const centerClientY = window.innerHeight / 2;
+      engine.setZoomAt(centerClientX, centerClientY, scale);
+    }
+  }
+
+  function handleZoomOut() {
+    const scale = Math.max(zoomLevel / 1.2, 0.1);
+    setZoomLevel(scale);
+    if (engine) {
+      const centerClientX = window.innerWidth / 2;
+      const centerClientY = window.innerHeight / 2;
+      engine.setZoomAt(centerClientX, centerClientY, scale);
+    }
+  }
+
+  function handleZoomReset() {
+    setZoomLevel(1);
+    if (engine) {
+      const centerClientX = window.innerWidth / 2;
+      const centerClientY = window.innerHeight / 2;
+      engine.setZoomAt(centerClientX, centerClientY, 1);
+    }
+  }
+
   return (
     <div className="relative w-screen h-screen">
       {tool ? (
@@ -230,7 +264,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                     engine.clearLocalStorage();
                     engine.existingShapes = [];
                     engine.clearCanvas();
-                    console.log("Canvas cleared");
                   }
                   setShowClearConfirm(false);
                 }}
@@ -793,6 +826,28 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
           </div>
         </div>
       )}
+
+      {/* Zoom Controls */}
+      <div className="fixed bottom-6 left-6 z-10 flex">
+        <button
+          onClick={handleZoomOut}
+          className={`${isThemeDark ? "bg-[#23232a] text-white" : "bg-[#ffffff] text-black outline outline-gray-200"} backdrop-blur-sm rounded-l-lg h-10 w-10 flex items-center justify-center hover:cursor-pointer `}
+        >
+          <Minus size={18} />
+        </button>
+        <button
+          onClick={handleZoomReset}
+          className={`${isThemeDark ? "bg-[#23232a] text-white" : "bg-[#ffffff] text-black outline outline-gray-200"} backdrop-blur-sm h-10 px-3 flex items-center justify-center hover:cursor-pointer text-sm font-medium`}
+        >
+          {Math.round(zoomLevel * 100)}%
+        </button>
+        <button
+          onClick={handleZoomIn}
+          className={`${isThemeDark ? "bg-[#23232a] text-white" : "bg-[#ffffff] text-black outline outline-gray-200"} backdrop-blur-sm rounded-r-lg h-10 w-10 flex items-center justify-center hover:cursor-pointer`}
+        >
+          <Plus size={18} />
+        </button>
+      </div>
     </div>
   );
 }

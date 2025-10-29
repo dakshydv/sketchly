@@ -15,6 +15,13 @@ export interface request extends Request {
 
 export type FontSizeType = "S" | "M" | "L" | "XL"
 
+export type strokeStyleType = "simple" | "rough" | "dense"
+
+export interface translateCords {
+  x: number,
+  y: number
+}
+
 export type shapesMessage =
   | {
       type: "rect";

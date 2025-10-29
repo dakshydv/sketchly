@@ -1,6 +1,13 @@
 import axios from "axios";
-import { Cords, FontSizeType, Shapes, shapesMessage } from "@/config/type";
-import { getDashDense, getDashRough, getExistingShapes } from "./utils";
+import {
+  Cords,
+  FontSizeType,
+  Shapes,
+  shapesMessage,
+  strokeStyleType,
+  translateCords,
+} from "@/config/type";
+import { getExistingShapes } from "./utils";
 import getStroke from "perfect-freehand";
 import { getSvgPathFromStroke } from "./utils";
 import { CaveatFont } from "@/config/style";
@@ -14,13 +21,15 @@ export class Engine {
   private startY = 0;
   private selectedStrokeWidth: number = 1;
   private selectedStrokeColor: string;
-  private selectedStrokeStyle: string = "simple";
+  private selectedStrokeStyle: strokeStyleType = "simple";
   private selectedBgColor: string;
   private selectedRectBorder: number = 30;
   private selectedTool: Shapes | null = "pointer";
   private selectedFontSize: number = 18;
   private canvasTheme: string = "dark";
   private freeDrawCords: Cords[] = [];
+  private zoomLevel: number = 1;
+  private translateCords: translateCords = { x: 0, y: 0 };
   private input!: HTMLTextAreaElement;
   private mouseDownHandler!: (e: MouseEvent) => void;
   private mouseUpHandler!: (e: MouseEvent) => void;
@@ -59,7 +68,7 @@ export class Engine {
     this.selectedTool = tool;
   }
 
-  public setStrokeStyle(style: string) {
+  public setStrokeStyle(style: strokeStyleType) {
     this.selectedStrokeStyle = style;
   }
 
@@ -70,16 +79,16 @@ export class Engine {
   public setFontSize(fontSize: FontSizeType) {
     switch (fontSize) {
       case "S":
-        this.selectedFontSize = 18
+        this.selectedFontSize = 18;
         break;
       case "M":
-        this.selectedFontSize = 24
+        this.selectedFontSize = 24;
         break;
       case "L":
-        this.selectedFontSize = 30
+        this.selectedFontSize = 30;
         break;
       case "XL":
-        this.selectedFontSize = 36
+        this.selectedFontSize = 36;
         break;
       default:
         break;
@@ -96,13 +105,6 @@ export class Engine {
     this.saveShapesToLocalStorage();
     this.clearCanvas();
   }
-
-  // informWsServer(shape: shapesMessage) {
-  //   this.existingShapes.push(shape);
-  //   this.saveShapesToLocalStorage();
-  //   // will add ws logic later
-  //   this.clearCanvas();
-  // }
 
   private saveShapesToLocalStorage() {
     try {
@@ -125,10 +127,13 @@ export class Engine {
     }
   }
 
-  clearCanvas() {
+  clearCanvas(previewDraw?: () => void) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = this.selectedBgColor;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.save();
+    this.ctx.translate(this.translateCords.x, this.translateCords.y);
+    this.ctx.scale(this.zoomLevel, this.zoomLevel);
     if (this.selectedTool === "pointer" && this.existingShapes.length <= 0) {
       this.drawWelcomeCanvas();
     }
@@ -185,7 +190,7 @@ export class Engine {
           {
             this.ctx.strokeStyle = shape.strokeColor;
             this.ctx.lineWidth = shape.strokeWidth;
-            this.ctx.font = `${shape.fontSize}px 'Caveat', cursive`
+            this.ctx.font = `${shape.fontSize}px 'Caveat', cursive`;
             this.ctx.fillStyle = shape.strokeColor;
             this.ctx.fillText(shape.text, shape.x, shape.y + shape.fontSize);
           }
@@ -235,14 +240,19 @@ export class Engine {
           break;
       }
     });
+    if (previewDraw) {
+      previewDraw();
+    }
+    this.ctx.restore();
   }
 
   drawText(x: number, y: number, strokeColor: string, fontSize: number) {
     this.input = document.createElement("textarea");
     this.input.style.color = strokeColor;
     this.input.autofocus = true;
-    this.input.style.left = `${x}px`;
-    this.input.style.top = `${y}px`;
+    const screen = this.worldToScreen(x, y);
+    this.input.style.left = `${screen.x}px`;
+    this.input.style.top = `${screen.y}px`;
     this.input.className = `${CaveatFont.className} `;
     this.input.style.fontSize = `${fontSize}px`;
     this.input.style.backgroundColor = this.selectedBgColor;
@@ -852,14 +862,48 @@ export class Engine {
     this.selectedStrokeWidth = width;
   }
 
+  private screenToWorld(clientX: number, clientY: number) {
+    const rect = this.canvas.getBoundingClientRect();
+    const xOnScreen = clientX - rect.left;
+    const yOnScreen = clientY - rect.top;
+    return {
+      x: (xOnScreen - this.translateCords.x) / this.zoomLevel,
+      y: (yOnScreen - this.translateCords.y) / this.zoomLevel,
+    };
+  }
+
+  private worldToScreen(worldX: number, worldY: number) {
+    return {
+      x: worldX * this.zoomLevel + this.translateCords.x,
+      y: worldY * this.zoomLevel + this.translateCords.y,
+    };
+  }
+
+  public setZoomAt(clientX: number, clientY: number, newZoom: number) {
+    const rect = this.canvas.getBoundingClientRect();
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
+
+    const world = this.screenToWorld(clientX, clientY);
+    const newTranslate = {
+      x: screenX - world.x * newZoom,
+      y: screenY - world.y * newZoom,
+    };
+    this.zoomLevel = newZoom;
+    this.translateCords = newTranslate;
+    this.clearCanvas();
+  }
+
   private transformX(clientX: number): number {
     const rect = this.canvas.getBoundingClientRect();
-    return clientX - rect.left;
+    const xOnScreen = clientX - rect.left;
+    return (xOnScreen - this.translateCords.x) / this.zoomLevel;
   }
 
   private transformY(clientY: number): number {
     const rect = this.canvas.getBoundingClientRect();
-    return clientY - rect.top;
+    const yOnScreen = clientY - rect.top;
+    return (yOnScreen - this.translateCords.y) / this.zoomLevel;
   }
 
   initMouseHandlers() {
@@ -1018,7 +1062,6 @@ export class Engine {
         default:
           break;
       }
-      // this.broadcastShape(shape)
     };
 
     this.mouseMoveHandler = (e) => {
@@ -1031,149 +1074,148 @@ export class Engine {
         const currentY = this.transformY(e.clientY);
         const width = currentX - this.startX;
         const height = currentY - this.startY;
-        this.clearCanvas();
+        this.clearCanvas(() => {
+          switch (this.selectedTool) {
+            case "rect":
+              this.drawRect(
+                this.startX,
+                this.startY,
+                width,
+                height,
+                this.selectedStrokeColor,
+                this.selectedStrokeStyle,
+                this.selectedStrokeWidth,
+                this.selectedRectBorder
+              );
+              break;
+            case "ellipse":
+              const centerX = this.startX + width / 2;
+              const centerY = this.startY + height / 2;
+              const radiusX = Math.abs(width / 2);
+              const radiusY = Math.abs(height / 2);
+              this.drawEllipse(
+                centerX,
+                centerY,
+                radiusX,
+                radiusY,
+                this.selectedStrokeColor,
+                this.selectedStrokeWidth,
+                this.selectedStrokeStyle
+              );
+              break;
+            case "line":
+              this.drawLine(
+                this.startX,
+                this.startY,
+                currentX,
+                currentY,
+                this.selectedStrokeColor,
+                this.selectedStrokeWidth,
+                this.selectedStrokeStyle
+              );
+              break;
+            case "diamond":
+              const xLeft = this.startX;
+              const xRight = currentX;
+              const yHorizontal = (this.startY + currentY) / 2; // y cordinate of left and right corner
+              const xVertical = (this.startX + currentX) / 2; // x cordinate of top and bottom corner
+              const yTop = this.startY;
+              const yBottom = currentY;
+              this.drawDiamond(
+                xLeft,
+                xRight,
+                yHorizontal,
+                xVertical,
+                yTop,
+                yBottom,
+                this.selectedStrokeColor,
+                this.selectedStrokeWidth,
+                this.selectedStrokeStyle
+              );
+              break;
+            case "pencil":
+              this.freeDrawCords.push({
+                x: this.transformX(e.clientX),
+                y: this.transformY(e.clientY),
+              });
+              this.initPencilDraw(
+                this.freeDrawCords,
+                this.selectedStrokeWidth,
+                this.selectedStrokeColor,
+                this.selectedStrokeStyle
+              );
+              break;
+            case "arrow":
+              const endX = currentX;
+              const endY = currentY;
+              this.drawArrow(
+                this.startX,
+                this.startY,
+                endX,
+                endY,
+                this.selectedStrokeColor,
+                this.selectedStrokeWidth,
+                this.selectedStrokeStyle
+              );
+              break;
+            case "pointer":
+              const offSetX = currentX - this.startX;
+              const offSetY = currentY - this.startY;
 
-        switch (this.selectedTool) {
-          case "rect":
-            this.drawRect(
-              this.startX,
-              this.startY,
-              width,
-              height,
-              this.selectedStrokeColor,
-              this.selectedStrokeStyle,
-              this.selectedStrokeWidth,
-              this.selectedRectBorder
-            );
-            break;
-          case "ellipse":
-            const centerX = this.startX + width / 2;
-            const centerY = this.startY + height / 2;
-            const radiusX = Math.abs(width / 2);
-            const radiusY = Math.abs(height / 2);
-            this.drawEllipse(
-              centerX,
-              centerY,
-              radiusX,
-              radiusY,
-              this.selectedStrokeColor,
-              this.selectedStrokeWidth,
-              this.selectedStrokeStyle
-            );
-            break;
-          case "line":
-            this.drawLine(
-              this.startX,
-              this.startY,
-              currentX,
-              currentY,
-              this.selectedStrokeColor,
-              this.selectedStrokeWidth,
-              this.selectedStrokeStyle
-            );
-            break;
-          case "diamond":
-            const xLeft = this.startX;
-            const xRight = currentX;
-            const yHorizontal = (this.startY + currentY) / 2; // y cordinate of left and right corner
-            const xVertical = (this.startX + currentX) / 2; // x cordinate of top and bottom corner
-            const yTop = this.startY;
-            const yBottom = currentY;
-            this.drawDiamond(
-              xLeft,
-              xRight,
-              yHorizontal,
-              xVertical,
-              yTop,
-              yBottom,
-              this.selectedStrokeColor,
-              this.selectedStrokeWidth,
-              this.selectedStrokeStyle
-            );
-            break;
-          case "pencil":
-            this.freeDrawCords.push({
-              x: this.transformX(e.clientX),
-              y: this.transformY(e.clientY),
-            });
-            this.clearCanvas();
-            this.initPencilDraw(
-              this.freeDrawCords,
-              this.selectedStrokeWidth,
-              this.selectedStrokeColor,
-              this.selectedStrokeStyle
-            );
-            break;
-          case "arrow":
-            const endX = this.transformX(currentX);
-            const endY = this.transformY(currentY);
-            this.drawArrow(
-              this.startX,
-              this.startY,
-              endX,
-              endY,
-              this.selectedStrokeColor,
-              this.selectedStrokeWidth,
-              this.selectedStrokeStyle
-            );
-            break;
-          case "pointer":
-            const offSetX = currentX - this.startX;
-            const offSetY = currentY - this.startY;
+              this.existingShapes.forEach((shape) => {
+                switch (shape.type) {
+                  case "rect":
+                    shape.x += offSetX;
+                    shape.y += offSetY;
+                    break;
+                  case "ellipse":
+                    shape.centerX += offSetX;
+                    shape.centerY += offSetY;
+                    break;
+                  case "line":
+                    shape.fromX += offSetX;
+                    shape.fromY += offSetY;
+                    shape.toX += offSetX;
+                    shape.toY += offSetY;
+                    break;
+                  case "text":
+                    shape.x += offSetX;
+                    shape.y += offSetY;
+                    break;
+                  case "diamond":
+                    shape.xLeft += offSetX;
+                    shape.xRight += offSetX;
+                    shape.yHorizontal += offSetY;
+                    shape.xVertical += offSetX;
+                    shape.yTop += offSetY;
+                    shape.yBottom += offSetY;
+                    break;
+                  case "pencil":
+                    shape.cords.forEach((cord) => {
+                      cord.x += offSetX;
+                      cord.y += offSetY;
+                    });
+                    break;
+                  case "arrow":
+                    shape.startX += offSetX;
+                    shape.endX += offSetX;
+                    shape.startY += offSetY;
+                    shape.endY += offSetY;
+                    break;
 
-            this.existingShapes.forEach((shape) => {
-              switch (shape.type) {
-                case "rect":
-                  shape.x += offSetX;
-                  shape.y += offSetY;
-                  break;
-                case "ellipse":
-                  shape.centerX += offSetX;
-                  shape.centerY += offSetY;
-                  break;
-                case "line":
-                  shape.fromX += offSetX;
-                  shape.fromY += offSetY;
-                  shape.toX += offSetX;
-                  shape.toY += offSetY;
-                  break;
-                case "text":
-                  shape.x += offSetX;
-                  shape.y += offSetY;
-                  break;
-                case "diamond":
-                  shape.xLeft += offSetX;
-                  shape.xRight += offSetX;
-                  shape.yHorizontal += offSetY;
-                  shape.xVertical += offSetX;
-                  shape.yTop += offSetY;
-                  shape.yBottom += offSetY;
-                  break;
-                case "pencil":
-                  shape.cords.forEach((cord) => {
-                    cord.x += offSetX;
-                    cord.y += offSetY;
-                  });
-                  break;
-                case "arrow":
-                  shape.startX += offSetX;
-                  shape.endX += offSetX;
-                  shape.startY += offSetY;
-                  shape.endY += offSetY;
-                  break;
+                  default:
+                    break;
+                }
 
-                default:
-                  break;
-              }
+                this.startX = currentX;
+                this.startY = currentY;
+              });
+              break;
 
-              this.startX = currentX;
-              this.startY = currentY;
-            });
-            break;
-
-          default:
-            break;
-        }
+            default:
+              break;
+          }
+        });
       }
     };
 
