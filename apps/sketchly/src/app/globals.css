@@ -7,3 +7,42 @@
 .cursor-eraser {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-circle-icon lucide-circle'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E") 6 6, crosshair;
 }
+
+html, body {
+  background-color: #121212;
+  height: 100%;
+  /* Prevent page scrolling and hide native scrollbars */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Ensure the Next.js root container does not scroll */
+#__next {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Hide scrollbars visually (WebKit + Firefox) while preventing scroll via overflow above */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+*::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+:root {
+  color-scheme: dark light;
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right);
+}

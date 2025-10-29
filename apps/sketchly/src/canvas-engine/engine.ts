@@ -35,6 +35,9 @@ export class Engine {
   private mouseUpHandler!: (e: MouseEvent) => void;
   private mouseMoveHandler!: (e: MouseEvent) => void;
   private mouseClickHandler!: (e: MouseEvent) => void;
+  private touchStartHandler!: (e: TouchEvent) => void;
+  private touchMoveHandler!: (e: TouchEvent) => void;
+  private touchEndHandler!: (e: TouchEvent) => void;
   existingShapes: shapesMessage[];
   socket?: WebSocket;
 
@@ -906,6 +909,11 @@ export class Engine {
     return (yOnScreen - this.translateCords.y) / this.zoomLevel;
   }
 
+  private getPrimaryTouch(e: TouchEvent) {
+    const touch = e.touches[0] ?? e.changedTouches[0];
+    return touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
+  }
+
   initMouseHandlers() {
     this.mouseClickHandler = (e) => {
       const x = this.transformX(e.clientX);
@@ -940,6 +948,38 @@ export class Engine {
         });
       }
     };
+
+    this.touchStartHandler = (e) => {
+      e.preventDefault();
+      if (!this.selectedTool) {
+        return;
+      }
+      this.clicked = true;
+      const cordinate = this.getPrimaryTouch(e);
+      if (!cordinate) {
+        return;
+      }
+      this.startX = this.transformX(cordinate.clientX);
+      this.startY = this.transformX(cordinate.clientY);
+      if (this.selectedTool === "pencil") {
+        this.freeDrawCords.push({
+          x: this.startX,
+          y: this.startY,
+        });
+      }
+    };
+
+    this.touchEndHandler = (e) => {
+      if (!this.selectedTool) return;
+      this.clicked = false;
+      const cord = this.getPrimaryTouch(e);
+      if (!cord) return;
+      const event = {clientX: cord.clientX, clientY: cord.clientY} as MouseEvent;
+      if (this.selectedTool === "text" || this.selectedTool === "eraser") {
+        this.mouseClickHandler(event);
+      }
+      this.mouseUpHandler(event);
+    }
 
     this.mouseUpHandler = (e) => {
       if (!this.selectedTool) {
@@ -1063,6 +1103,15 @@ export class Engine {
           break;
       }
     };
+
+    this.touchMoveHandler = (e) => {
+      if (!this.selectedTool || !this.clicked) return;
+      e.preventDefault();
+      const cord = this.getPrimaryTouch(e);
+      if (!cord) return;
+      const event = {clientX: cord.clientX, clientY: cord.clientY} as MouseEvent;
+      this.mouseMoveHandler(event);
+    }
 
     this.mouseMoveHandler = (e) => {
       if (!this.selectedTool) {
@@ -1223,6 +1272,9 @@ export class Engine {
     this.canvas.addEventListener("mousedown", this.mouseDownHandler);
     this.canvas.addEventListener("mouseup", this.mouseUpHandler);
     this.canvas.addEventListener("mousemove", this.mouseMoveHandler);
+    this.canvas.addEventListener("touchstart", this.touchStartHandler);
+    this.canvas.addEventListener("touchmove", this.touchMoveHandler);
+    this.canvas.addEventListener("touchend", this.touchEndHandler);
   }
 
   cleanup() {
@@ -1230,5 +1282,8 @@ export class Engine {
     this.canvas.removeEventListener("mousedown", this.mouseDownHandler);
     this.canvas.removeEventListener("mouseup", this.mouseUpHandler);
     this.canvas.removeEventListener("mousemove", this.mouseMoveHandler);
+    this.canvas.removeEventListener("touchstart", this.touchStartHandler);
+    this.canvas.removeEventListener("touchmove", this.touchMoveHandler);
+    this.canvas.removeEventListener("touchend", this.touchEndHandler);
   }
 }
