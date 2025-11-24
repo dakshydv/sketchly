@@ -637,17 +637,16 @@ export class Engine {
     this.ctx.lineTo(window.innerWidth / 2 + 75, 80);
     this.ctx.lineTo(window.innerWidth / 2 + 95, 90);
     this.ctx.closePath();
-    this.ctx.fillStyle = "#7c7c7c";
+    // this.ctx.fillStyle = "#7c7c7c";
     this.ctx.fill();
     this.ctx.stroke();
 
     this.ctx.font = "24px 'Caveat', cursive";
-    this.ctx.fillStyle = "#7c7c7c";
     this.ctx.fillText("Pick a tool &", window.innerWidth / 2 - 50, 165);
     this.ctx.fillText("Start drawing!", window.innerWidth / 2 - 55, 190);
 
     this.ctx.font = "900 55px 'Caveat', cursive";
-    this.ctx.fillStyle = this.canvasTheme === "dark" ? "#190064" : "#e1dfff";
+    this.ctx.fillStyle = this.canvasTheme === "dark" ? "#190064" : "#a8a5ff";
     this.ctx.fillText(
       "SKETCHLY",
       window.innerWidth / 2 - 120,

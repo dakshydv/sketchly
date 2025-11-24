@@ -412,7 +412,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
           />
         </div>
         <button
-          className="bg-[#a7a5ff] px-4 rounded-md h-10 flex items-center justify-center"
+          className={`${isThemeDark ? "bg-[#a7a5ff] text-black" : "bg-[#a8a5ff] text-white"} px-4 rounded-md h-10 flex items-center justify-center`}
           onClick={() => setShowShareComingSoon(true)}
         >
           Share
