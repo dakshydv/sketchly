@@ -109,7 +109,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
         case "0":
           setTool("eraser");
           break;
-        case "10":
+        case "0":
           setTool("eraser");
           break;
 
@@ -408,7 +408,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
                 ? `${isThemeDark ? "bg-[#403e6a]" : "bg-[#e0dfff]"}`
                 : ""
             }
-            number={10}
+            number={0}
           />
         </div>
         <button
