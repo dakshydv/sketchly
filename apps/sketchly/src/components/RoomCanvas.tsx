@@ -354,4 +354,3 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
     </div>
   );
 }
-
