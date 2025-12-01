@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: #09090b;
+  --color-surface: rgba(24, 24, 27, 0.6);
+  --color-surface-hover: rgba(39, 39, 42, 0.6);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+}
+
 .cursor-crosshair-plus {
   cursor: crosshair;
 }
@@ -9,7 +20,8 @@
 }
 
 html, body {
-  background-color: #121212;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   height: 100%;
   /* Prevent page scrolling and hide native scrollbars */
   overflow: hidden;
@@ -31,7 +43,14 @@ html, body {
 }
 
 :root {
-  color-scheme: dark light;
+  color-scheme: dark;
+}
+
+.glass-panel {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
 }
 
 .safe-top {

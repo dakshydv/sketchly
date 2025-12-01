@@ -13,17 +13,18 @@ export interface request extends Request {
   userId?: number;
 }
 
-export type FontSizeType = "S" | "M" | "L" | "XL"
+export type FontSizeType = "S" | "M" | "L" | "XL";
 
-export type strokeStyleType = "simple" | "rough" | "dense"
+export type strokeStyleType = "simple" | "rough" | "dense";
 
 export interface translateCords {
-  x: number,
-  y: number
+  x: number;
+  y: number;
 }
 
 export type shapesMessage =
   | {
+      id: string;
       type: "rect";
       x: number;
       y: number;
@@ -35,6 +36,7 @@ export type shapesMessage =
       cornerRadius: number;
     }
   | {
+      id: string;
       type: "ellipse";
       centerX: number;
       centerY: number;
@@ -45,6 +47,7 @@ export type shapesMessage =
       strokeStyle: string;
     }
   | {
+      id: string;
       type: "line";
       fromX: number;
       fromY: number;
@@ -55,6 +58,7 @@ export type shapesMessage =
       strokeStyle: string;
     }
   | {
+      id: string;
       type: "text";
       text: string;
       style: string;
@@ -63,9 +67,10 @@ export type shapesMessage =
       width: number;
       strokeColor: string;
       strokeWidth: number;
-      fontSize: number
+      fontSize: number;
     }
   | {
+      id: string;
       type: "diamond";
       xLeft: number;
       xRight: number;
@@ -75,17 +80,19 @@ export type shapesMessage =
       yBottom: number;
       strokeColor: string;
       strokeWidth: number;
-      strokeStyle: string
+      strokeStyle: string;
     }
   | {
+      id: string;
       type: "pencil";
       style: string;
       cords: Cords[];
       strokeColor: string;
       strokeWidth: number;
-      strokeStyle: string
+      strokeStyle: string;
     }
   | {
+      id: string;
       type: "arrow";
       startX: number;
       endX: number;
@@ -93,7 +100,7 @@ export type shapesMessage =
       endY: number;
       strokeColor: string;
       strokeWidth: number;
-      strokeStyle: string
+      strokeStyle: string;
     };
 
 export type Shapes =
@@ -132,4 +139,10 @@ export interface ShapesResponse {
   message: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface UserActions {
+  type: "newShape" | "deleteShape" | "dragShape";
+  id: string;
+  shape?: shapesMessage
 }

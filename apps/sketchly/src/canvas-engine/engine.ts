@@ -6,11 +6,13 @@ import {
   shapesMessage,
   strokeStyleType,
   translateCords,
+  UserActions,
 } from "@/config/type";
 import { getExistingShapes } from "./utils";
 import getStroke from "perfect-freehand";
 import { getSvgPathFromStroke } from "./utils";
 import { CaveatFont } from "@/config/style";
+import { generateRandomId } from "@/config/utils";
 
 export class Engine {
   private canvas: HTMLCanvasElement;
@@ -38,6 +40,9 @@ export class Engine {
   private touchStartHandler!: (e: TouchEvent) => void;
   private touchMoveHandler!: (e: TouchEvent) => void;
   private touchEndHandler!: (e: TouchEvent) => void;
+  private UserActions: UserActions[] = [];
+  private UndoStack: UserActions[] = [];
+  private RedoStack: UserActions[] = [];
   existingShapes: shapesMessage[];
   socket?: WebSocket;
 
@@ -107,6 +112,11 @@ export class Engine {
     this.existingShapes.push(shape);
     this.saveShapesToLocalStorage();
     this.clearCanvas();
+    this.UserActions.push({
+      type: "newShape",
+      id: shape.id,
+      shape
+    });
   }
 
   private saveShapesToLocalStorage() {
@@ -249,6 +259,75 @@ export class Engine {
     this.ctx.restore();
   }
 
+  public handleUndo() {
+    // first clear redo stack
+    if (this.RedoStack.length !== 0) {
+      const action = this.RedoStack.pop();
+      if (!action) {
+        return
+      }
+      // if shape was created we will delete it
+      if (action.type === "newShape") {
+        console.log('new shape');                // this needs to be deleted later
+        this.UndoStack.push(action);
+        this.existingShapes = this.existingShapes.filter(
+          (shape) => shape.id !== action.id
+        );
+      }
+      // if shape was deleted we add it back
+      if (action.type === "deleteShape") {
+        console.log('delete shape');                // this needs to be deleted later
+        if (!action.shape) {
+          return;
+        }
+        this.existingShapes.push(action.shape);
+      }
+      this.UndoStack.push(action);
+    } else {
+      // if redo stack is empty
+      const action = this.UserActions.pop();
+      if (!action) {
+        return;
+      }
+      this.UndoStack.push(action);
+      if (action.type === "newShape") {
+        this.existingShapes = this.existingShapes.filter(
+          (shape) => shape.id !== action?.id
+        );
+      }
+      if (action.type === "deleteShape") {
+        if (!action.shape) {
+          return;
+        }
+        this.existingShapes.push(action.shape);
+      }
+    }
+    this.clearCanvas();
+    console.log(this.UndoStack);                // this needs to be deleted later
+    this.saveShapesToLocalStorage();
+  }
+
+  public handleRedo() {
+    if (this.UndoStack.length !== 0) {
+      // take actions from undo stack
+      const action = this.UndoStack.pop();
+      console.log(this.UndoStack);                // this needs to be deleted later
+      if (!action || !action.shape) {
+        return
+      }
+      if (action.type === "newShape") {
+        this.existingShapes.push(action.shape)
+        this.RedoStack.push(action);
+        this.saveShapesToLocalStorage();
+        this.clearCanvas();
+        // console.log(this.RedoStack);                // this needs to be deleted later
+      }
+    } else {
+      // if undo stack is empty, redo cann't be done
+      return
+    }
+  }
+
   drawText(x: number, y: number, strokeColor: string, fontSize: number) {
     this.input = document.createElement("textarea");
     this.input.style.color = strokeColor;
@@ -320,6 +399,7 @@ export class Engine {
       this.ctx.fillText(this.input.value, x, y + 24);
       this.ctx.closePath();
       const shape: shapesMessage = {
+        id: generateRandomId(),
         type: "text",
         text: this.input.value,
         style: "#FFFFFF",
@@ -845,6 +925,11 @@ export class Engine {
     );
     this.clearCanvas();
     this.saveShapesToLocalStorage();
+    this.UserActions.push({
+      type: "deleteShape",
+      id: shape.id,
+      shape,
+    });
   }
 
   setBgColor(color: string) {
@@ -973,12 +1058,15 @@ export class Engine {
       this.clicked = false;
       const cord = this.getPrimaryTouch(e);
       if (!cord) return;
-      const event = {clientX: cord.clientX, clientY: cord.clientY} as MouseEvent;
+      const event = {
+        clientX: cord.clientX,
+        clientY: cord.clientY,
+      } as MouseEvent;
       if (this.selectedTool === "text" || this.selectedTool === "eraser") {
         this.mouseClickHandler(event);
       }
       this.mouseUpHandler(event);
-    }
+    };
 
     this.mouseUpHandler = (e) => {
       if (!this.selectedTool) {
@@ -1001,6 +1089,7 @@ export class Engine {
         case "rect":
           {
             shape = {
+              id: generateRandomId(),
               type: "rect",
               x: this.startX,
               y: this.startY,
@@ -1018,6 +1107,7 @@ export class Engine {
         case "ellipse":
           {
             shape = {
+              id: generateRandomId(),
               type: "ellipse",
               centerX: this.startX + width / 2,
               centerY: this.startY + height / 2,
@@ -1034,6 +1124,7 @@ export class Engine {
         case "line":
           {
             shape = {
+              id: generateRandomId(),
               type: "line",
               fromX: this.startX,
               fromY: this.startY,
@@ -1049,6 +1140,7 @@ export class Engine {
         case "diamond":
           {
             shape = {
+              id: generateRandomId(),
               type: "diamond",
               xLeft: this.startX,
               xRight: endX,
@@ -1066,6 +1158,7 @@ export class Engine {
         case "pencil":
           {
             shape = {
+              id: generateRandomId(),
               type: "pencil",
               cords: this.freeDrawCords,
               style: "#FFFFFF",
@@ -1086,6 +1179,7 @@ export class Engine {
         case "arrow":
           {
             shape = {
+              id: generateRandomId(),
               type: "arrow",
               startX: this.startX,
               startY: this.startY,
@@ -1108,9 +1202,12 @@ export class Engine {
       e.preventDefault();
       const cord = this.getPrimaryTouch(e);
       if (!cord) return;
-      const event = {clientX: cord.clientX, clientY: cord.clientY} as MouseEvent;
+      const event = {
+        clientX: cord.clientX,
+        clientY: cord.clientY,
+      } as MouseEvent;
       this.mouseMoveHandler(event);
-    }
+    };
 
     this.mouseMoveHandler = (e) => {
       if (!this.selectedTool) {
