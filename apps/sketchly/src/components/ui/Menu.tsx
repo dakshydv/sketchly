@@ -66,7 +66,7 @@ export function Menu({
         <div className="flex justify-between items-center mb-8">
           <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Menu</h2>
           <Button variant="icon" size="icon" onClick={onClose}>
-            <X size={20} color={isDark ? "white" : "black"} />
+            <X size={20} color={isDark ? "white" : "blackt "} />
           </Button>
         </div>
 
