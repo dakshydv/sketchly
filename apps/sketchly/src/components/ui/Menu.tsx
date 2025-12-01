@@ -55,10 +55,27 @@ export function Menu({
       />
 
       {/* Menu Panel */}
-      <div className="relative w-80 h-full glass-panel border-r border-[var(--color-border)] flex flex-col p-6 animate-in slide-in-from-left duration-200">
+      <div
+        className={`relative w-80 h-full flex flex-col p-6 animate-in slide-in-from-left duration-200 ${
+          isDark
+            ? "glass-panel border-y-0 border-l-0"
+            : "bg-white border-r border-zinc-200 shadow-xl"
+        }`}
+      >
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-bold">Menu</h2>
-          <Button variant="icon" size="icon" onClick={onClose}>
+          <h2
+            className={`text-xl font-bold ${
+              isDark ? "text-white" : "text-zinc-900"
+            }`}
+          >
+            Menu
+          </h2>
+          <Button
+            variant="icon"
+            size="icon"
+            onClick={onClose}
+            className={!isDark ? "text-zinc-900 hover:bg-zinc-100" : ""}
+          >
             <X size={20} />
           </Button>
         </div>
@@ -67,7 +84,11 @@ export function Menu({
           {menuItems.map((item, index) => (
             <button
               key={index}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-left text-sm font-medium"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left text-sm font-medium ${
+                isDark
+                  ? "hover:bg-[var(--color-surface-hover)] text-white"
+                  : "hover:bg-zinc-100 text-zinc-700"
+              }`}
               onClick={() => {
                 item.onClick();
                 if (item.label === "Clear Canvas") onClose();
@@ -81,9 +102,19 @@ export function Menu({
 
         <div className="mt-auto">
           <div className="mb-6">
-             <p className="text-xs font-medium text-[var(--color-muted)] mb-3 uppercase tracking-wider">Theme</p>
-             <button
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-left text-sm font-medium w-full"
+            <p
+              className={`text-xs font-medium mb-3 uppercase tracking-wider ${
+                isDark ? "text-[var(--color-muted)]" : "text-zinc-500"
+              }`}
+            >
+              Theme
+            </p>
+            <button
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left text-sm font-medium w-full ${
+                isDark
+                  ? "hover:bg-[var(--color-surface-hover)] text-white"
+                  : "hover:bg-zinc-100 text-zinc-700"
+              }`}
               onClick={onToggleTheme}
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -91,7 +122,13 @@ export function Menu({
             </button>
           </div>
 
-          <p className="text-xs font-medium text-[var(--color-muted)] mb-3 uppercase tracking-wider">Socials</p>
+          <p
+            className={`text-xs font-medium mb-3 uppercase tracking-wider ${
+              isDark ? "text-[var(--color-muted)]" : "text-zinc-500"
+            }`}
+          >
+            Socials
+          </p>
           <div className="flex gap-2">
             {socialLinks.map((link, index) => (
               <a
@@ -99,7 +136,11 @@ export function Menu({
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-[var(--color-foreground)]"
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark
+                    ? "hover:bg-[var(--color-surface-hover)] text-[var(--color-foreground)]"
+                    : "hover:bg-zinc-100 text-zinc-700"
+                }`}
               >
                 {link.icon}
               </a>

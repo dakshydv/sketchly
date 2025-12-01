@@ -32,8 +32,8 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
   const [showShareComingSoon, setShowShareComingSoon] =
     useState<boolean>(false);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [isBottomMenuOpen, setIsBottomMenuOpen] = useState<boolean>(false);
-  const [isBottomCanvasOpen, setIsBottomCanvasOpen] = useState<boolean>(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -76,10 +76,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
         case "0":
           setTool("eraser");
           break;
-        case "0":
-          setTool("eraser");
-          break;
-
         default:
           break;
       }
@@ -94,6 +90,28 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
       window.removeEventListener("keydown", keyDownEvent);
     };
   }, []);
+
+  useEffect(() => {
+    const handleShortcuts = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          engine?.handleRedo();
+        } else {
+          engine?.handleUndo();
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "y") {
+        e.preventDefault();
+        engine?.handleRedo();
+      }
+    };
+
+    window.addEventListener("keydown", handleShortcuts);
+    return () => {
+      window.removeEventListener("keydown", handleShortcuts);
+    };
+  }, [engine]);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -134,6 +152,18 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
     if (engine) {
       engine.setTool(tool);
       engine.clearCanvas();
+
+      const handleStackChange = () => {
+        setCanUndo(engine.canUndo);
+        setCanRedo(engine.canRedo);
+      };
+
+      engine.subscribe(handleStackChange);
+      handleStackChange(); // Initial sync
+
+      return () => {
+        engine.unsubscribe(handleStackChange);
+      };
     }
   }, [tool, engine]);
 
@@ -250,6 +280,8 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
         zoomLevel={zoomLevel}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       <Toolbar activeTool={tool} onToolChange={setTool} />

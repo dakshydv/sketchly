@@ -45,6 +45,7 @@ export class Engine {
   private RedoStack: UserActions[] = [];
   existingShapes: shapesMessage[];
   socket?: WebSocket;
+  private listeners: (() => void)[] = [];
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -117,6 +118,28 @@ export class Engine {
       id: shape.id,
       shape
     });
+    this.UndoStack = [];          // redo will be unavailable after a new shape is created
+    this.notifyListeners();
+  }
+
+  public subscribe(listener: () => void) {
+    this.listeners.push(listener);
+  }
+
+  public unsubscribe(listener: () => void) {
+    this.listeners = this.listeners.filter((l) => l !== listener);
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach((listener) => listener());
+  }
+
+  public get canUndo(): boolean {
+    return this.UserActions.length > 0 || this.RedoStack.length > 0;
+  }
+
+  public get canRedo(): boolean {
+    return this.UndoStack.length > 0;
   }
 
   private saveShapesToLocalStorage() {
@@ -260,72 +283,70 @@ export class Engine {
   }
 
   public handleUndo() {
-    // first clear redo stack
+    // first clear Redo Stack
     if (this.RedoStack.length !== 0) {
+      console.log('action from redo stack taken');                // this needs to be deleted later
       const action = this.RedoStack.pop();
+      console.log(action);                // this needs to be deleted later
+      if (!action) {
+        return
+      };
+      if (action.type === "newShape") {
+        console.log('a shape was created in redo and is now undone (deleted)');                // this needs to be deleted later
+        this.existingShapes = this.existingShapes.filter((shape) => shape.id !== action.shape?.id)
+      }
+      if (action.type === "deleteShape") {
+        console.log('a shape was deleted in redo and is now undone (created)');                // this needs to be deleted later
+        if (!action.shape) {
+          return
+        }
+        this.existingShapes.push(action.shape);
+      }
+      this.UndoStack.push(action)
+    } else {
+      // if the redo stack is empty, we will get action from UserActions
+      const action = this.UserActions.pop();
+      console.log('user action ppoed when performing undo (redo = [])');                // this needs to be deleted later
       if (!action) {
         return
       }
-      // if shape was created we will delete it
       if (action.type === "newShape") {
-        console.log('new shape');                // this needs to be deleted later
-        this.UndoStack.push(action);
-        this.existingShapes = this.existingShapes.filter(
-          (shape) => shape.id !== action.id
-        );
-      }
-      // if shape was deleted we add it back
-      if (action.type === "deleteShape") {
-        console.log('delete shape');                // this needs to be deleted later
-        if (!action.shape) {
-          return;
-        }
-        this.existingShapes.push(action.shape);
-      }
-      this.UndoStack.push(action);
-    } else {
-      // if redo stack is empty
-      const action = this.UserActions.pop();
-      if (!action) {
-        return;
-      }
-      this.UndoStack.push(action);
-      if (action.type === "newShape") {
-        this.existingShapes = this.existingShapes.filter(
-          (shape) => shape.id !== action?.id
-        );
+        console.log('a shape was created which is now undone (deleted)');                // this needs to be deleted later
+        this.existingShapes = this.existingShapes.filter((shape) => shape.id !== action.shape?.id);
       }
       if (action.type === "deleteShape") {
+        console.log('a shape was deleted which is now undone (re-stored)');                // this needs to be deleted later
         if (!action.shape) {
           return;
-        }
+        };
         this.existingShapes.push(action.shape);
       }
+      this.UndoStack.push(action)
+      console.log(`lenght of undo stack after undoing is ${this.UndoStack}`);                // this needs to be deleted later
     }
     this.clearCanvas();
-    console.log(this.UndoStack);                // this needs to be deleted later
+    this.clearCanvas();
     this.saveShapesToLocalStorage();
+    this.notifyListeners();
   }
 
   public handleRedo() {
-    if (this.UndoStack.length !== 0) {
-      // take actions from undo stack
-      const action = this.UndoStack.pop();
-      console.log(this.UndoStack);                // this needs to be deleted later
-      if (!action || !action.shape) {
-        return
-      }
-      if (action.type === "newShape") {
-        this.existingShapes.push(action.shape)
-        this.RedoStack.push(action);
-        this.saveShapesToLocalStorage();
-        this.clearCanvas();
-        // console.log(this.RedoStack);                // this needs to be deleted later
-      }
-    } else {
-      // if undo stack is empty, redo cann't be done
-      return
+    if (this.UndoStack.length === 0) return;
+    const action = this.UndoStack.pop();
+    if (!action || !action.type || !action.shape) {
+      return;
     }
+    if (action?.type === "newShape") {
+      this.existingShapes.push(action.shape);
+    } 
+    if (action.type === "deleteShape") {
+      this.existingShapes = this.existingShapes.filter((shape) => shape.id !== action.shape?.id);
+    }
+    this.RedoStack.push(action);
+    this.clearCanvas();
+    this.clearCanvas();
+    this.saveShapesToLocalStorage();
+    this.notifyListeners();
   }
 
   drawText(x: number, y: number, strokeColor: string, fontSize: number) {
@@ -930,6 +951,7 @@ export class Engine {
       id: shape.id,
       shape,
     });
+    this.UndoStack = [];      // makes redo unavailable after a shape is deleted
   }
 
   setBgColor(color: string) {
