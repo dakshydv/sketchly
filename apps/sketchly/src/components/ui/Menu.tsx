@@ -47,7 +47,7 @@ export function Menu({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-start">
+    <div className="fixed inset-0 z-[60] flex justify-start">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
@@ -55,28 +55,18 @@ export function Menu({
       />
 
       {/* Menu Panel */}
-      <div
-        className={`relative w-80 h-full flex flex-col p-6 animate-in slide-in-from-left duration-200 ${
-          isDark
-            ? "glass-panel border-y-0 border-l-0"
-            : "bg-white border-r border-zinc-200 shadow-xl"
+      <div 
+        className={`relative w-80 h-screen border-r border-t-0 border-b-0 border-l-0 rounded-none flex flex-col p-6 animate-in slide-in-from-left duration-200 ${
+          isDark 
+            ? "glass-panel border-[var(--color-border)]" 
+            : "bg-white border-gray-200 shadow-xl"
         }`}
+        style={{ borderTop: 'none', borderBottom: 'none', borderLeft: 'none' }}
       >
         <div className="flex justify-between items-center mb-8">
-          <h2
-            className={`text-xl font-bold ${
-              isDark ? "text-white" : "text-zinc-900"
-            }`}
-          >
-            Menu
-          </h2>
-          <Button
-            variant="icon"
-            size="icon"
-            onClick={onClose}
-            className={!isDark ? "text-zinc-900 hover:bg-zinc-100" : ""}
-          >
-            <X size={20} />
+          <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>Menu</h2>
+          <Button variant="icon" size="icon" onClick={onClose}>
+            <X size={20} color={isDark ? "white" : "black"} />
           </Button>
         </div>
 
@@ -84,10 +74,10 @@ export function Menu({
           {menuItems.map((item, index) => (
             <button
               key={index}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left text-sm font-medium ${
-                isDark
-                  ? "hover:bg-[var(--color-surface-hover)] text-white"
-                  : "hover:bg-zinc-100 text-zinc-700"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg hover:cursor-pointer transition-colors text-left text-sm font-medium ${
+                isDark 
+                  ? "hover:bg-[var(--color-surface-hover)] text-[var(--color-foreground)]" 
+                  : "hover:bg-gray-100 text-gray-900"
               }`}
               onClick={() => {
                 item.onClick();
@@ -102,18 +92,12 @@ export function Menu({
 
         <div className="mt-auto">
           <div className="mb-6">
-            <p
-              className={`text-xs font-medium mb-3 uppercase tracking-wider ${
-                isDark ? "text-[var(--color-muted)]" : "text-zinc-500"
-              }`}
-            >
-              Theme
-            </p>
-            <button
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left text-sm font-medium w-full ${
-                isDark
-                  ? "hover:bg-[var(--color-surface-hover)] text-white"
-                  : "hover:bg-zinc-100 text-zinc-700"
+             <p className={`text-xs font-medium mb-3 uppercase tracking-wider ${isDark ? "text-[var(--color-muted)]" : "text-gray-500"}`}>Theme</p>
+             <button
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg hover:cursor-pointer transition-colors text-left text-sm font-medium w-full ${
+                isDark 
+                  ? "hover:bg-[var(--color-surface-hover)] text-[var(--color-foreground)]" 
+                  : "hover:bg-gray-100 text-gray-900"
               }`}
               onClick={onToggleTheme}
             >
@@ -122,13 +106,7 @@ export function Menu({
             </button>
           </div>
 
-          <p
-            className={`text-xs font-medium mb-3 uppercase tracking-wider ${
-              isDark ? "text-[var(--color-muted)]" : "text-zinc-500"
-            }`}
-          >
-            Socials
-          </p>
+          <p className={`text-xs font-medium mb-3 uppercase tracking-wider ${isDark ? "text-[var(--color-muted)]" : "text-gray-500"}`}>Socials</p>
           <div className="flex gap-2">
             {socialLinks.map((link, index) => (
               <a
@@ -137,9 +115,9 @@ export function Menu({
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`p-2 rounded-lg transition-colors ${
-                  isDark
-                    ? "hover:bg-[var(--color-surface-hover)] text-[var(--color-foreground)]"
-                    : "hover:bg-zinc-100 text-zinc-700"
+                  isDark 
+                    ? "hover:bg-[var(--color-surface-hover)] text-[var(--color-foreground)]" 
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
               >
                 {link.icon}

@@ -723,28 +723,29 @@ export class Engine {
     this.ctx.fillText("Export, preferences, languages, ...", 85, 152);
 
     this.ctx.beginPath();
-    this.ctx.moveTo(window.innerWidth / 2 + 75, 170);
+    this.ctx.moveTo(window.innerWidth / 2 + 80, window.innerHeight - 180);
     this.ctx.quadraticCurveTo(
       window.innerWidth / 2 + 125,
-      150,
+      window.innerHeight - 140,
       window.innerWidth / 2 + 85,
-      95
+      window.innerHeight - 105
     );
     this.ctx.strokeStyle = "#7c7c7c";
     this.ctx.stroke();
 
     this.ctx.beginPath();
-    this.ctx.moveTo(window.innerWidth / 2 + 75, 95);
-    this.ctx.lineTo(window.innerWidth / 2 + 75, 80);
-    this.ctx.lineTo(window.innerWidth / 2 + 95, 90);
+    this.ctx.moveTo(window.innerWidth / 2 + 75, window.innerHeight - 110);
+    this.ctx.lineTo(window.innerWidth / 2 + 75, window.innerHeight - 95);
+    this.ctx.lineTo(window.innerWidth / 2 + 95, window.innerHeight - 100);
     this.ctx.closePath();
     // this.ctx.fillStyle = "#7c7c7c";
     this.ctx.fill();
     this.ctx.stroke();
 
     this.ctx.font = "24px 'Caveat', cursive";
-    this.ctx.fillText("Pick a tool &", window.innerWidth / 2 - 50, 165);
-    this.ctx.fillText("Start drawing!", window.innerWidth / 2 - 55, 190);
+    this.ctx.fillStyle = "#7c7c7c";
+    this.ctx.fillText("Pick a tool &", window.innerWidth / 2 - 50, window.innerHeight - 185);
+    this.ctx.fillText("Start drawing!", window.innerWidth / 2 - 55, window.innerHeight - 160);
 
     this.ctx.font = "900 55px 'Caveat', cursive";
     this.ctx.fillStyle = this.canvasTheme === "dark" ? "#190064" : "#a8a5ff";

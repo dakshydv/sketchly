@@ -273,16 +273,18 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
         onToggleTheme={() => setIsThemeDark(!isThemeDark)}
       />
 
-      <CanvasControls
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
-        zoomLevel={zoomLevel}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
+      {!isMenuOpen && (
+        <CanvasControls
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+          zoomLevel={zoomLevel}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
+      )}
 
       <Toolbar activeTool={tool} onToolChange={setTool} />
 
