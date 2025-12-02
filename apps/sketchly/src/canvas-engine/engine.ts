@@ -45,6 +45,7 @@ export class Engine {
   private RedoStack: UserActions[] = [];
   existingShapes: shapesMessage[];
   socket?: WebSocket;
+  private SelectedShape: shapesMessage | null = null;
   private listeners: (() => void)[] = [];
 
   constructor(
@@ -116,9 +117,9 @@ export class Engine {
     this.UserActions.push({
       type: "newShape",
       id: shape.id,
-      shape
+      shape,
     });
-    this.UndoStack = [];          // redo will be unavailable after a new shape is created
+    this.UndoStack = []; // redo will be unavailable after a new shape is created
     this.notifyListeners();
   }
 
@@ -285,44 +286,40 @@ export class Engine {
   public handleUndo() {
     // first clear Redo Stack
     if (this.RedoStack.length !== 0) {
-      console.log('action from redo stack taken');                // this needs to be deleted later
       const action = this.RedoStack.pop();
-      console.log(action);                // this needs to be deleted later
       if (!action) {
-        return
-      };
+        return;
+      }
       if (action.type === "newShape") {
-        console.log('a shape was created in redo and is now undone (deleted)');                // this needs to be deleted later
-        this.existingShapes = this.existingShapes.filter((shape) => shape.id !== action.shape?.id)
+        this.existingShapes = this.existingShapes.filter(
+          (shape) => shape.id !== action.shape?.id
+        );
       }
       if (action.type === "deleteShape") {
-        console.log('a shape was deleted in redo and is now undone (created)');                // this needs to be deleted later
         if (!action.shape) {
-          return
+          return;
         }
         this.existingShapes.push(action.shape);
       }
-      this.UndoStack.push(action)
+      this.UndoStack.push(action);
     } else {
       // if the redo stack is empty, we will get action from UserActions
       const action = this.UserActions.pop();
-      console.log('user action ppoed when performing undo (redo = [])');                // this needs to be deleted later
       if (!action) {
-        return
+        return;
       }
       if (action.type === "newShape") {
-        console.log('a shape was created which is now undone (deleted)');                // this needs to be deleted later
-        this.existingShapes = this.existingShapes.filter((shape) => shape.id !== action.shape?.id);
+        this.existingShapes = this.existingShapes.filter(
+          (shape) => shape.id !== action.shape?.id
+        );
       }
       if (action.type === "deleteShape") {
-        console.log('a shape was deleted which is now undone (re-stored)');                // this needs to be deleted later
         if (!action.shape) {
           return;
-        };
+        }
         this.existingShapes.push(action.shape);
       }
-      this.UndoStack.push(action)
-      console.log(`lenght of undo stack after undoing is ${this.UndoStack}`);                // this needs to be deleted later
+      this.UndoStack.push(action);
     }
     this.clearCanvas();
     this.clearCanvas();
@@ -338,9 +335,11 @@ export class Engine {
     }
     if (action?.type === "newShape") {
       this.existingShapes.push(action.shape);
-    } 
+    }
     if (action.type === "deleteShape") {
-      this.existingShapes = this.existingShapes.filter((shape) => shape.id !== action.shape?.id);
+      this.existingShapes = this.existingShapes.filter(
+        (shape) => shape.id !== action.shape?.id
+      );
     }
     this.RedoStack.push(action);
     this.clearCanvas();
@@ -744,8 +743,16 @@ export class Engine {
 
     this.ctx.font = "24px 'Caveat', cursive";
     this.ctx.fillStyle = "#7c7c7c";
-    this.ctx.fillText("Pick a tool &", window.innerWidth / 2 - 50, window.innerHeight - 185);
-    this.ctx.fillText("Start drawing!", window.innerWidth / 2 - 55, window.innerHeight - 160);
+    this.ctx.fillText(
+      "Pick a tool &",
+      window.innerWidth / 2 - 50,
+      window.innerHeight - 185
+    );
+    this.ctx.fillText(
+      "Start drawing!",
+      window.innerWidth / 2 - 55,
+      window.innerHeight - 160
+    );
 
     this.ctx.font = "900 55px 'Caveat', cursive";
     this.ctx.fillStyle = this.canvasTheme === "dark" ? "#190064" : "#a8a5ff";
@@ -952,7 +959,7 @@ export class Engine {
       id: shape.id,
       shape,
     });
-    this.UndoStack = [];      // makes redo unavailable after a shape is deleted
+    this.UndoStack = []; // makes redo unavailable after a shape is deleted
   }
 
   setBgColor(color: string) {
@@ -1021,6 +1028,95 @@ export class Engine {
     return touch ? { clientX: touch.clientX, clientY: touch.clientY } : null;
   }
 
+  private drawBoundingBox(
+    startX: number,
+    startY: number,
+    height: number,
+    width: number
+  ) {
+    const strokeColor = "#4169E1";
+    const strokeStyle = "simple";
+    // top-left square
+    this.drawRect(startX - 11, startY - 10, 10, 10, "#4169E1", "simple", 2, 0);
+    // top-right square
+    this.drawRect(
+      startX + width + 1,
+      startY - 10,
+      10,
+      10,
+      strokeColor,
+      strokeStyle,
+      2,
+      0
+    );
+    // bottom-left square
+    this.drawRect(
+      startX - 11,
+      startY + height + 1,
+      10,
+      10,
+      strokeColor,
+      strokeStyle,
+      2,
+      0
+    );
+    // bottom-right square
+    this.drawRect(
+      startX + width + 1,
+      startY + height + 1,
+      10,
+      10,
+      strokeColor,
+      strokeStyle,
+      2,
+      0
+    );
+
+    // top line
+    this.drawLine(
+      startX + 1,
+      startY - 6,
+      startX + width + 2,
+      startY - 6,
+      strokeColor,
+      2,
+      strokeStyle
+    );
+
+    // bottom line
+    this.drawLine(
+      startX - 1,
+      startY + height + 6,
+      startX + width + 2,
+      startY + height + 6,
+      strokeColor,
+      2,
+      strokeStyle
+    );
+
+    // left line
+    this.drawLine(
+      startX - 6,
+      startY + 2,
+      startX - 6,
+      startY + height + 2,
+      strokeColor,
+      2,
+      strokeStyle
+    );
+
+    // right line
+    this.drawLine(
+      startX + width + 6,
+      startY - 1,
+      startX + width + 6,
+      startY + height + 2,
+      strokeColor,
+      2,
+      strokeStyle
+    );
+  }
+
   initMouseHandlers() {
     this.mouseClickHandler = (e) => {
       const x = this.transformX(e.clientX);
@@ -1053,6 +1149,66 @@ export class Engine {
           x: this.startX,
           y: this.startY,
         });
+      }
+      if (this.selectedTool === "select") {
+        for (let i = 0; i < this.existingShapes.length; i++) {
+          const shape = this.existingShapes[i];
+          if (this.isPointInShape(this.startX, this.startY, shape)) {
+            this.SelectedShape = shape;
+            switch (shape.type) {
+              case "rect":
+                this.drawBoundingBox(
+                  shape.x,
+                  shape.y,
+                  shape.height,
+                  shape.width
+                );
+                break;
+
+              case "diamond":
+                this.drawBoundingBox(
+                  shape.xLeft,
+                  shape.yTop,
+                  shape.yBottom - shape.yTop,
+                  shape.xRight - shape.xLeft
+                );
+                break;
+
+              case "ellipse":
+                this.drawBoundingBox(
+                  shape.centerX - shape.radiusX,
+                  shape.centerY - shape.radiusY,
+                  2 * shape.radiusY,
+                  2 * shape.radiusX
+                );
+                break;
+
+              case "arrow":
+                this.drawBoundingBox(
+                  Math.min(shape.startX, shape.endX),
+                  Math.min(shape.startY, shape.endY),
+                  Math.abs(shape.endY - shape.startY),
+                  Math.abs(shape.endX - shape.startX)
+                );
+                break;
+
+              case "line":
+                this.drawBoundingBox(
+                  Math.min(shape.fromX, shape.toX),
+                  Math.min(shape.fromY, shape.toY),
+                  Math.abs(shape.toY - shape.fromY),
+                  Math.abs(shape.toX - shape.fromX)
+                );
+                break;
+
+              case "text":
+                this.drawBoundingBox(shape.x, shape.y, 32, shape.width);
+                break;
+              default:
+                break;
+            }
+          }
+        }
       }
     };
 
@@ -1097,11 +1253,6 @@ export class Engine {
       }
       this.clicked = false;
 
-      if (this.selectedTool === "pointer") {
-        this.saveShapesToLocalStorage();
-        return;
-      }
-
       let shape: shapesMessage | null = null;
       const endX = this.transformX(e.clientX);
       const endY = this.transformY(e.clientY);
@@ -1126,7 +1277,6 @@ export class Engine {
             this.broadcastShape(shape);
           }
           break;
-
         case "ellipse":
           {
             shape = {
@@ -1143,7 +1293,6 @@ export class Engine {
             this.broadcastShape(shape);
           }
           break;
-
         case "line":
           {
             shape = {
@@ -1215,6 +1364,12 @@ export class Engine {
             this.broadcastShape(shape);
           }
           break;
+        case "pointer":
+          this.saveShapesToLocalStorage();
+          break;
+        case "select":
+          this.saveShapesToLocalStorage();
+          break;
         default:
           break;
       }
@@ -1242,6 +1397,8 @@ export class Engine {
         const currentY = this.transformY(e.clientY);
         const width = currentX - this.startX;
         const height = currentY - this.startY;
+        const offSetX = currentX - this.startX;
+        const offSetY = currentY - this.startY;
         this.clearCanvas(() => {
           switch (this.selectedTool) {
             case "rect":
@@ -1327,9 +1484,6 @@ export class Engine {
               );
               break;
             case "pointer":
-              const offSetX = currentX - this.startX;
-              const offSetY = currentY - this.startY;
-
               this.existingShapes.forEach((shape) => {
                 switch (shape.type) {
                   case "rect":
@@ -1378,6 +1532,108 @@ export class Engine {
                 this.startX = currentX;
                 this.startY = currentY;
               });
+              break;
+            case "select":
+              if (!this.SelectedShape) {
+                return;
+              }
+              switch (this.SelectedShape.type) {
+                case "rect":
+                  this.SelectedShape.x += offSetX;
+                  this.SelectedShape.y += offSetY;
+                  this.drawBoundingBox(
+                    this.SelectedShape.x + offSetX,
+                    this.SelectedShape.y + offSetY,
+                    this.SelectedShape.height,
+                    this.SelectedShape.width
+                  );
+                  break;
+                case "ellipse":
+                  this.drawBoundingBox(
+                    this.SelectedShape.centerX -
+                      this.SelectedShape.radiusX +
+                      offSetX,
+                    this.SelectedShape.centerY -
+                      this.SelectedShape.radiusY +
+                      offSetY,
+                    2 * this.SelectedShape.radiusY,
+                    2 * this.SelectedShape.radiusX
+                  );
+                  this.SelectedShape.centerX += offSetX;
+                  this.SelectedShape.centerY += offSetY;
+                  break;
+                case "line":
+                  this.drawBoundingBox(
+                    Math.min(this.SelectedShape.fromX, this.SelectedShape.toX) +
+                      offSetX,
+                    Math.min(this.SelectedShape.fromY, this.SelectedShape.toY) +
+                      offSetY,
+                    Math.abs(this.SelectedShape.toY - this.SelectedShape.fromY),
+                    Math.abs(this.SelectedShape.toX - this.SelectedShape.fromX)
+                  );
+                  this.SelectedShape.fromX += offSetX;
+                  this.SelectedShape.fromY += offSetY;
+                  this.SelectedShape.toX += offSetX;
+                  this.SelectedShape.toY += offSetY;
+                  break;
+                case "text":
+                  this.drawBoundingBox(
+                    this.SelectedShape.x + offSetX,
+                    this.SelectedShape.y + offSetY,
+                    32,
+                    this.SelectedShape.width
+                  );
+                  this.SelectedShape.x += offSetX;
+                  this.SelectedShape.y += offSetY;
+                  break;
+                case "diamond":
+                  this.drawBoundingBox(
+                    this.SelectedShape.xLeft + offSetX,
+                    this.SelectedShape.yTop + offSetY,
+                    this.SelectedShape.yBottom - this.SelectedShape.yTop,
+                    this.SelectedShape.xRight - this.SelectedShape.xLeft
+                  );
+                  this.SelectedShape.xLeft += offSetX;
+                  this.SelectedShape.xRight += offSetX;
+                  this.SelectedShape.yHorizontal += offSetY;
+                  this.SelectedShape.xVertical += offSetX;
+                  this.SelectedShape.yTop += offSetY;
+                  this.SelectedShape.yBottom += offSetY;
+                  break;
+                case "pencil":
+                  this.SelectedShape.cords.forEach((cord) => {
+                    cord.x += offSetX;
+                    cord.y += offSetY;
+                  });
+                  break;
+                case "arrow":
+                  this.drawBoundingBox(
+                    Math.min(
+                      this.SelectedShape.startX,
+                      this.SelectedShape.endX
+                    ),
+                    Math.min(
+                      this.SelectedShape.startY,
+                      this.SelectedShape.endY
+                    ),
+                    Math.abs(
+                      this.SelectedShape.endY - this.SelectedShape.startY
+                    ),
+                    Math.abs(
+                      this.SelectedShape.endX - this.SelectedShape.startX
+                    )
+                  );
+                  this.SelectedShape.startX += offSetX;
+                  this.SelectedShape.endX += offSetX;
+                  this.SelectedShape.startY += offSetY;
+                  this.SelectedShape.endY += offSetY;
+                  break;
+
+                default:
+                  break;
+              }
+              this.startX = currentX;
+              this.startY = currentY;
               break;
 
             default:
