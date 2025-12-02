@@ -196,6 +196,10 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
     engine?.setTheme(isThemeDark ? "dark" : "light");
   }, [isThemeDark]);
 
+  useEffect(() => {
+    engine?.clearCanvas();
+  }, [dimensions, engine]);
+
   function handleClear() {
     setShowClearConfirm(true);
   }
