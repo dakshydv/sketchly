@@ -1,135 +1,106 @@
-# Turborepo starter
+# Sketchly
 
-This Turborepo starter is maintained by the Turborepo core team.
+Sketchly is a real-time collaborative whiteboard application designed to help teams and individuals brainstorm, plan, and visualize ideas seamlessly. Built with modern web technologies, it offers a smooth and responsive drawing experience.
 
-## Using this example
 
-Run the following command:
+<img width="1469" height="703" alt="image" src="./assets/thumbnail.png" />
 
-```sh
-npx create-turbo@latest
-```
+## 🚀 Features
 
-## What's inside?
+- **Canvas Drawing**: Freehand, shapes and editable text
+- **Real-time Collaboration**: Work together with others on the same whiteboard in real-time.
+- **Eraser Tool**: Remove individual shapes
+- **Freehand Drawing**: Smooth and natural drawing experience.
+- **Modern UI**: Clean and intuitive interface built with Tailwind CSS.
+- **Responsive Design**: Works great on different screen sizes.
 
-This Turborepo includes the following packages/apps:
+## 🛠️ Technologies Used
 
-### Apps and Packages
+Sketchly is built using a modern tech stack within a **TurboRepo** monorepo structure:
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/) & [Tabler Icons](https://tabler-icons.io/)
+- **Free-hand drawing**: [perfect-freehand](https://github.com/steveruizok/perfect-freehand)
+- **Package Manager**: [pnpm](https://pnpm.io/)
+- **Build System**: [TurboRepo](https://turbo.build/)
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## 📂 Project Structure
 
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+The project follows a monorepo structure:
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+.
+├── apps
+│   └── sketchly          # Main Next.js frontend
+├── packages
+│   ├── ui                # Shared UI components
+│   ├── eslint-config     # Shared ESLint configurations
+│   └── typescript-config # Shared TypeScript configurations
+├── assets
+│   └── thumbnail.png     # Project assets
+├── package.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+└── turbo.json
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+- **`apps/sketchly`**: The main Next.js frontend application.
+- **`packages/ui`**: Shared UI components.
+- **`packages/eslint-config`**: Shared ESLint configurations.
+- **`packages/typescript-config`**: Shared TypeScript configurations.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+## ⚡ Getting Started
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+Follow these steps to set up the project locally.
 
-### Develop
+### Prerequisites
 
-To develop all apps and packages, run the following command:
+- **Node.js**: Version 18 or higher.
+- **pnpm**: This project uses pnpm as the package manager.
 
-```
-cd my-turborepo
+### Installation
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+1.  **Clone the repository:**
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+    ```bash
+    git clone https://github.com/dakshydv/sketchly.git
+    cd sketchly
+    ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+2.  **Install dependencies:**
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+    ```bash
+    pnpm install
+    ```
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+### Running the Development Server
+
+To start the development server for the application:
+
+```bash
+pnpm dev
 ```
 
-### Remote Caching
+This command runs `turbo run dev`, which starts the Next.js app. Open [http://localhost:3000](http://localhost:3000) in your browser to see the app.
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+### Building for Production
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+To build the application for production:
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```bash
+pnpm build
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### Linting
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+To run the linter across the project:
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+```bash
+pnpm lint
 ```
 
-## Useful Links
+## 🤝 Contributing
 
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+Contributions are welcome! Please feel free to submit a Pull Request.
