@@ -87,7 +87,6 @@ export function distanceFromLine(x: number, y: number, x1: number, y1: number, x
   const closestX = x1 + t * C;
   const closestY = y1 + t * D;
 
-  // Distance from point to the segment
   const dist = Math.hypot(x - closestX, y - closestY);
 
   return dist;

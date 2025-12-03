@@ -28,23 +28,31 @@ export function CanvasControls({
       {/* Undo/Redo Group */}
       <div className="glass-panel p-1 rounded-xl flex items-center shadow-lg">
         <Tooltip content="Undo (Ctrl+Z)">
-          <Button 
-            variant="icon" 
-            size="icon" 
-            onClick={onUndo} 
+          <Button
+            variant="icon"
+            size="icon"
+            onClick={onUndo}
             disabled={!canUndo}
-            className={!canUndo ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}
+            className={
+              !canUndo
+                ? "opacity-30 cursor-not-allowed hover:bg-transparent"
+                : ""
+            }
           >
             <Undo2 size={20} />
           </Button>
         </Tooltip>
         <Tooltip content="Redo (Ctrl+Y)">
-          <Button 
-            variant="icon" 
-            size="icon" 
-            onClick={onRedo} 
+          <Button
+            variant="icon"
+            size="icon"
+            onClick={onRedo}
             disabled={!canRedo}
-            className={!canRedo ? "opacity-30 cursor-not-allowed hover:bg-transparent" : ""}
+            className={
+              !canRedo
+                ? "opacity-30 cursor-not-allowed hover:bg-transparent"
+                : ""
+            }
           >
             <Redo2 size={20} />
           </Button>
@@ -58,9 +66,9 @@ export function CanvasControls({
             <Minus size={20} />
           </Button>
         </Tooltip>
-        
+
         <Tooltip content="Reset Zoom">
-          <button 
+          <button
             onClick={onZoomReset}
             className="w-16 px-2 text-xs font-medium text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-colors"
           >

@@ -92,7 +92,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
   }, []);
 
   useEffect(() => {
-    const handleShortcuts = (e: KeyboardEvent) => {
+    const handleUndoRedoShortcuts = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
         e.preventDefault();
         if (e.shiftKey) {
@@ -107,11 +107,29 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
       }
     };
 
-    window.addEventListener("keydown", handleShortcuts);
+    window.addEventListener("keydown", handleUndoRedoShortcuts);
     return () => {
-      window.removeEventListener("keydown", handleShortcuts);
+      window.removeEventListener("keydown", handleUndoRedoShortcuts);
     };
   }, [engine]);
+
+  useEffect(() => {
+    const handleZoomShortcuts = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "=") {
+        e.preventDefault();
+        handleZoomIn();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "-") {
+        e.preventDefault();
+        handleZoomOut();
+      }
+    };
+
+    window.addEventListener("keydown", handleZoomShortcuts);
+    return () => {
+      window.removeEventListener("keydown", handleZoomShortcuts);
+    };
+  }, [zoomLevel, engine]);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -309,9 +327,7 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
       {showClearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="glass-panel text-white rounded-xl shadow-2xl p-8 flex flex-col items-center max-w-sm text-center">
-            <span className="text-lg font-medium mb-4">
-              Clear Canvas?
-            </span>
+            <span className="text-lg font-medium mb-4">Clear Canvas?</span>
             <p className="text-sm text-[var(--color-muted)] mb-6">
               This action cannot be undone. Are you sure you want to proceed?
             </p>
@@ -356,7 +372,6 @@ export function RoomCanvas({ roomId }: { roomId: number }) {
           </div>
         </div>
       )}
-
     </div>
   );
 }
