@@ -8,7 +8,7 @@ import {
   translateCords,
   UserActions,
 } from "@/config/type";
-import { getExistingShapes } from "./utils";
+import { distanceFromLine, getExistingShapes } from "./utils";
 import getStroke from "perfect-freehand";
 import { getSvgPathFromStroke } from "./utils";
 import { CaveatFont } from "@/config/style";
@@ -477,17 +477,42 @@ export class Engine {
       case "rect":
         {
           if (
-            (x >= shape.x &&
-              x <= shape.x + shape.width &&
-              y >= shape.y - 3 &&
-              y <= shape.y + 3) ||
-            (x === shape.x && y >= shape.y && y <= shape.y + shape.height) ||
-            (x >= shape.x &&
-              x <= shape.x + shape.width &&
-              y === shape.y + shape.height) ||
-            (x === shape.x + shape.width &&
-              y >= shape.y &&
-              y <= shape.y + shape.height)
+            // top-line
+            distanceFromLine(
+              x,
+              y,
+              shape.x,
+              shape.y,
+              shape.x + shape.width,
+              shape.y
+            ) <= 4 ||
+            // left-line
+            distanceFromLine(
+              x,
+              y,
+              shape.x,
+              shape.y,
+              shape.x,
+              shape.y + shape.height
+            ) <= 4 ||
+            // right-line
+            distanceFromLine(
+              x,
+              y,
+              shape.x + shape.width,
+              shape.y,
+              shape.x + shape.width,
+              shape.y + shape.height
+            ) <= 4 ||
+            // bottom-line
+            distanceFromLine(
+              x,
+              y,
+              shape.x,
+              shape.y + shape.height,
+              shape.x + shape.width,
+              shape.y + shape.height
+            ) <= 4
           ) {
             return true;
           }
@@ -505,92 +530,57 @@ export class Engine {
           return normalized <= 1;
         }
         break;
-      case "diamond": {
-        const distanceToLine = (
-          x1: number,
-          y1: number,
-          x2: number,
-          y2: number,
-          px: number,
-          py: number
-        ) => {
-          const A = px - x1;
-          const B = py - y1;
-          const C = x2 - x1;
-          const D = y2 - y1;
-
-          const dot = A * C + B * D;
-          const lenSq = C * C + D * D;
-
-          if (lenSq === 0) return Math.sqrt(A * A + B * B);
-
-          let param = dot / lenSq;
-          param = Math.max(0, Math.min(1, param));
-
-          const xx = x1 + param * C;
-          const yy = y1 + param * D;
-
-          const dx = px - xx;
-          const dy = py - yy;
-          return Math.sqrt(dx * dx + dy * dy);
-        };
-
-        const edge1 = distanceToLine(
-          shape.xLeft,
-          shape.yHorizontal,
-          shape.xVertical,
-          shape.yTop,
-          x,
-          y
-        );
-        const edge2 = distanceToLine(
-          shape.xVertical,
-          shape.yTop,
-          shape.xRight,
-          shape.yHorizontal,
-          x,
-          y
-        );
-        const edge3 = distanceToLine(
-          shape.xRight,
-          shape.yHorizontal,
-          shape.xVertical,
-          shape.yBottom,
-          x,
-          y
-        );
-        const edge4 = distanceToLine(
-          shape.xVertical,
-          shape.yBottom,
-          shape.xLeft,
-          shape.yHorizontal,
-          x,
-          y
-        );
-
-        const minDistance = Math.min(edge1, edge2, edge3, edge4);
-        return minDistance <= tolerance;
-      }
-      case "line":
+      case "diamond":
         {
           if (
-            (x >= shape.fromX &&
-              x <= shape.toX &&
-              y <= shape.fromY &&
-              y >= shape.toY) ||
-            (x >= shape.fromX &&
-              x <= shape.toX &&
-              y >= shape.fromY &&
-              y <= shape.toY) ||
-            (x <= shape.fromX &&
-              x >= shape.toX &&
-              y <= shape.fromY &&
-              y >= shape.toY) ||
-            (x <= shape.fromX &&
-              x >= shape.toX &&
-              y >= shape.fromY &&
-              y <= shape.toY)
+            distanceFromLine(
+              x,
+              y,
+              shape.xLeft,
+              shape.yHorizontal,
+              shape.xVertical,
+              shape.yTop
+            ) <= 4 ||
+            distanceFromLine(
+              x,
+              y,
+              shape.xVertical,
+              shape.yTop,
+              shape.xRight,
+              shape.yHorizontal
+            ) <= 4 ||
+            distanceFromLine(
+              x,
+              y,
+              shape.xRight,
+              shape.yHorizontal,
+              shape.xVertical,
+              shape.yBottom
+            ) <= 4 ||
+            distanceFromLine(
+              x,
+              y,
+              shape.xVertical,
+              shape.yBottom,
+              shape.xLeft,
+              shape.yHorizontal
+            ) <= 4
           ) {
+            return true;
+          }
+        }
+        break;
+      case "line":
+        {
+          const distance = distanceFromLine(
+            x,
+            y,
+            shape.fromX,
+            shape.fromY,
+            shape.toX,
+            shape.toY
+          );
+          if (distance <= 4) {
             return true;
           }
         }
@@ -611,57 +601,33 @@ export class Engine {
             shape.endX - headLength * Math.sin(angle + Math.PI / 6);
 
           if (
-            // main line
-            (x >= shape.startX &&
-              x <= shape.endX &&
-              y <= shape.startY &&
-              y >= shape.endY) ||
-            (x >= shape.startX &&
-              x <= shape.endX &&
-              y >= shape.startY &&
-              y <= shape.endY) ||
-            (x <= shape.startX &&
-              x >= shape.endX &&
-              y <= shape.startY &&
-              y >= shape.endY) ||
-            (x <= shape.startX &&
-              x >= shape.endX &&
-              y >= shape.startY &&
-              y <= shape.endY) ||
-            // left side arrow
-            (x >= arrowLeftX &&
-              x <= shape.endX &&
-              y <= arrowLeftY &&
-              y >= shape.endY) ||
-            (x >= arrowLeftX &&
-              x <= shape.endX &&
-              y >= arrowLeftY &&
-              y <= shape.endY) ||
-            (x <= arrowLeftX &&
-              x >= shape.endX &&
-              y <= arrowLeftY &&
-              y >= shape.endY) ||
-            (x <= arrowLeftX &&
-              x >= shape.endX &&
-              y >= arrowLeftY &&
-              y <= shape.endY) ||
-            // right side arrow
-            (x >= arrowRightX &&
-              x <= shape.endX &&
-              y <= arrowRightY &&
-              y >= shape.endY) ||
-            (x >= arrowRightX &&
-              x <= shape.endX &&
-              y >= arrowRightY &&
-              y <= shape.endY) ||
-            (x <= arrowRightX &&
-              x >= shape.endX &&
-              y <= arrowRightY &&
-              y >= shape.endY) ||
-            (x <= arrowRightX &&
-              x >= shape.endX &&
-              y >= arrowRightY &&
-              y <= shape.endY)
+            // distance from main line
+            distanceFromLine(
+              x,
+              y,
+              shape.startX,
+              shape.startY,
+              shape.endX,
+              shape.endY
+            ) <= 4 ||
+            // distance from left-side arrow
+            distanceFromLine(
+              x,
+              y,
+              arrowLeftX,
+              arrowLeftY,
+              shape.endX,
+              shape.endY
+            ) <= 4 ||
+            // distance from right-side arrow
+            distanceFromLine(
+              x,
+              y,
+              arrowRightX,
+              arrowRightY,
+              shape.endX,
+              shape.endY
+            ) <= 4
           ) {
             return true;
           }

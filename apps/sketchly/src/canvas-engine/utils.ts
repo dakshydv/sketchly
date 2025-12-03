@@ -65,3 +65,30 @@ export function getSvgPathFromStroke(points: number[][]): string {
 
 export const getDashRough = (stroke: number) => [stroke, stroke * 6];
 export const getDashDense = (stroke: number) => [stroke, stroke * 3];
+
+export function distanceFromLine(x: number, y: number, x1: number, y1: number, x2: number, y2: number, threshold = 4) {
+  const A = x - x1;
+  const B = y - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const lenSq = C*C + D*D;
+
+  // If segment is a point
+  if (lenSq === 0) {
+    return Math.hypot(x - x1, y - y1);
+  }
+
+  // Clamp t between 0 and 1 for finite segment
+  let t = (A*C + B*D) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+
+  // Closest point on the segment
+  const closestX = x1 + t * C;
+  const closestY = y1 + t * D;
+
+  // Distance from point to the segment
+  const dist = Math.hypot(x - closestX, y - closestY);
+
+  return dist;
+}
