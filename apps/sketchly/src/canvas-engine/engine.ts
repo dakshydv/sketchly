@@ -40,6 +40,7 @@ export class Engine {
   private touchStartHandler!: (e: TouchEvent) => void;
   private touchMoveHandler!: (e: TouchEvent) => void;
   private touchEndHandler!: (e: TouchEvent) => void;
+  private wheelHandler!: (e: WheelEvent) => void;
   private UserActions: UserActions[] = [];
   private UndoStack: UserActions[] = [];
   private RedoStack: UserActions[] = [];
@@ -1213,6 +1214,19 @@ export class Engine {
       this.mouseUpHandler(event);
     };
 
+    this.wheelHandler = (e) => {
+      if (!e.ctrlKey) {
+        // Pan
+        const newTranslate = {
+          x: this.translateCords.x - e.deltaX,
+          y: this.translateCords.y - e.deltaY,
+        };
+        this.translateCords = newTranslate;
+        this.clearCanvas();
+        e.preventDefault();
+      }
+    };
+
     this.mouseUpHandler = (e) => {
       if (!this.selectedTool) {
         return;
@@ -1616,6 +1630,9 @@ export class Engine {
     this.canvas.addEventListener("touchstart", this.touchStartHandler);
     this.canvas.addEventListener("touchmove", this.touchMoveHandler);
     this.canvas.addEventListener("touchend", this.touchEndHandler);
+    this.canvas.addEventListener("wheel", this.wheelHandler, {
+      passive: false,
+    });
   }
 
   cleanup() {
@@ -1626,5 +1643,6 @@ export class Engine {
     this.canvas.removeEventListener("touchstart", this.touchStartHandler);
     this.canvas.removeEventListener("touchmove", this.touchMoveHandler);
     this.canvas.removeEventListener("touchend", this.touchEndHandler);
+    this.canvas.removeEventListener("wheel", this.wheelHandler);
   }
 }
