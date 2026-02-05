@@ -652,6 +652,7 @@ export class Engine {
         }
         break;
       default:
+        return false;
         break;
     }
   }
